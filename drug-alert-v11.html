@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藥品警訊模擬平台 v11</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{font-family:'Noto Sans TC',sans-serif;background:#f7f5f0;color:#1c1a17;min-height:100vh;line-height:1.6;}
+:root{
+  --paper:#faf9f5;--paper2:#f0ede6;--border:#dbd7ce;--bdk:#b8b3a8;
+  --ink:#1c1a17;--ink2:#4a4640;--ink3:#8a837a;
+  --green:#2a6b4a;--gbg:#eaf3ed;
+  --amber:#b05e0d;--abg:#fdf3e7;
+  --red:#c0392b;--rbg:#fdf0ee;
+  --blue:#1a5fa8;--bbg:#eef4fc;
+  --mono:'IBM Plex Mono',monospace;--r:3px;
+}
+/* LOGIN */
+#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f7f5f0;background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,var(--border) 31px,var(--border) 32px),repeating-linear-gradient(90deg,transparent,transparent 31px,var(--border) 31px,var(--border) 32px);}
+.lcard{background:var(--paper);border:2px solid var(--ink);border-radius:var(--r);padding:44px 52px;max-width:440px;width:92%;box-shadow:5px 5px 0 var(--ink);animation:su .35s ease;}
+@keyframes su{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.llogo{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+.ltitle{font-size:26px;font-weight:900;line-height:1.2;margin-bottom:4px;}
+.lsub{font-size:13px;color:var(--ink3);margin-bottom:28px;line-height:1.6;}
+.lg{margin-bottom:16px;}
+.ll{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;display:block;}
+.li{width:100%;padding:11px 14px;background:#f7f5f0;border:1.5px solid var(--bdk);border-radius:var(--r);font-size:15px;font-family:inherit;color:var(--ink);transition:border-color .15s;}
+.li:focus{outline:none;border-color:var(--green);background:#fff;}
+.lhint{font-size:11px;color:var(--ink3);margin-top:4px;}
+.ldiv{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--ink3);font-size:12px;}
+.ldiv::before,.ldiv::after{content:'';flex:1;height:1px;background:var(--border);}
+.btn-start{width:100%;padding:13px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s;margin-bottom:8px;}
+.btn-start:hover{background:var(--green);}
+.btn-load-file{width:100%;padding:11px;background:transparent;color:var(--ink2);border:1.5px solid var(--bdk);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-load-file:hover{border-color:var(--ink);color:var(--ink);}
+/* APP */
+#screen-app{display:none;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;flex-shrink:0;background:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sb-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px;}
+.sb-drug{font-size:16px;font-weight:900;color:#fff;line-height:1.2;}
+.sb-drug span{font-size:11px;font-weight:400;color:rgba(255,255,255,.35);font-family:var(--mono);display:block;margin-top:2px;}
+.nav-sec{padding:14px 0 4px;}
+.nav-sec-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);padding:0 20px 5px;}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.46);transition:all .12s;border-left:2px solid transparent;}
+.ni:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.78);}
+.ni.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7dd3a8;font-weight:600;}
+.ni.filled{color:rgba(255,255,255,.62);}
+.nn{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);font-weight:600;flex-shrink:0;color:rgba(255,255,255,.32);}
+.ni.active .nn{background:#7dd3a8;color:var(--ink);}
+.ni.filled .nn{background:rgba(125,211,168,.2);color:#7dd3a8;}
+.sb-footer{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);}
+.pb-lbl{font-size:11px;color:rgba(255,255,255,.28);margin-bottom:5px;font-family:var(--mono);}
+.pb{height:3px;background:rgba(255,255,255,.1);border-radius:2px;}
+.pb-fill{height:100%;background:#7dd3a8;border-radius:2px;transition:width .4s;}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{background:var(--paper);border-bottom:1px solid var(--border);padding:0 28px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.tb-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.tb-actions{display:flex;gap:8px;align-items:center;}
+.content{padding:28px 32px;max-width:920px;}
+/* Panels */
+.panel{display:none;}.panel.show{display:block;}
+.ph{margin-bottom:24px;}
+.pey{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;}
+.pt{font-size:22px;font-weight:900;line-height:1.2;}
+.pd{font-size:13px;color:var(--ink3);margin-top:4px;max-width:580px;line-height:1.7;}
+/* Cards */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;}
+.ch{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.ct{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);}
+.cb{padding:18px 20px;}
+/* Notes */
+.note{border-radius:var(--r);padding:9px 13px;font-size:12px;margin-bottom:14px;line-height:1.6;border:1px solid;}
+.note.blue{background:var(--bbg);border-color:#c3d9f5;color:var(--blue);}
+.note.amber{background:var(--abg);border-color:#f5d6a8;color:var(--amber);}
+/* Forms */
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);}
+.fi,.fs{padding:7px 10px;background:#f7f5f0;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;color:var(--ink);transition:border-color .15s;width:100%;}
+.fi:focus,.fs:focus{outline:none;border-color:var(--green);background:#fff;}
+.fi::placeholder{color:var(--ink3);}
+.frow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;}
+.frow .fg{flex:1;min-width:100px;}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .13s;}
+.btn-ink{background:var(--ink);color:#fff;}.btn-ink:hover{background:var(--green);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#1f5238;}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--ink2);}.btn-ghost:hover{border-color:var(--ink);color:var(--ink);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.bico{background:transparent;border:none;cursor:pointer;color:var(--ink3);padding:3px;font-size:14px;transition:color .12s;line-height:1;}
+.bico:hover{color:var(--red);}
+/* Tags */
+.trow{display:flex;gap:8px;margin-bottom:8px;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;min-height:24px;}
+.tag{display:inline-flex;align-items:center;gap:5px;background:var(--paper2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--ink2);}
+.tag .tr{cursor:pointer;color:var(--ink3);}.tag .tr:hover{color:var(--red);}
+.wlt{display:inline-flex;align-items:center;gap:6px;background:var(--gbg);border:1px solid #b8ddc8;border-radius:var(--r);padding:4px 10px;font-size:12px;color:var(--green);}
+.wlt .tr{cursor:pointer;opacity:.5;}.wlt .tr:hover{opacity:1;color:var(--red);}
+/* ALS */
+.als{padding:5px 7px;border:1.5px solid var(--border);border-radius:var(--r);font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;background:#fff;white-space:nowrap;}
+.als.hard{border-color:#f5bfb4;color:var(--red);}
+.als.soft{border-color:#f5d6a8;color:var(--amber);}
+/* Checkbox opts */
+.dil-options{display:flex;flex-direction:column;gap:5px;}
+.dopt{display:flex;align-items:center;gap:8px;padding:7px 11px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:13px;transition:all .12s;user-select:none;}
+.dopt:hover{border-color:var(--green);}
+.dopt.on{border-color:var(--green);background:var(--gbg);color:var(--green);font-weight:600;}
+.dopt input{accent-color:var(--green);}
+.dil-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dgl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+/* Dose card */
+.dc-card{background:var(--paper2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.dc-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.dc-body{display:flex;flex-direction:column;gap:8px;}
+.dc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.dc-rl{font-size:11px;color:var(--ink3);min-width:56px;font-family:var(--mono);}
+.cs{padding:6px 7px;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green);cursor:pointer;}
+.cs:focus{outline:none;border-color:var(--green);}
+.cn{width:82px;padding:6px 7px;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:var(--mono);color:var(--ink);text-align:right;}
+.cn:focus{outline:none;border-color:var(--green);}
+.ut{width:58px;padding:6px 7px;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:var(--mono);color:var(--ink);}
+.ut:focus{outline:none;border-color:var(--green);}
+.kg-wrap{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);cursor:pointer;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r);background:#fff;user-select:none;white-space:nowrap;}
+.kg-wrap:hover{border-color:var(--green);}
+.kg-wrap.on{border-color:var(--green);background:var(--gbg);color:var(--green);}
+.kg-wrap input{accent-color:var(--green);}
+/* Renal group */
+.rg{background:var(--paper2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.rg-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.tier-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:9px 10px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;}
+.tlbl{font-size:11px;color:var(--ink3);min-width:40px;font-family:var(--mono);}
+/* Popup */
+.overlay{display:none;position:fixed;inset:0;background:rgba(28,26,23,.6);z-index:200;backdrop-filter:blur(3px);align-items:center;justify-content:center;}
+.overlay.show{display:flex;}
+.popup{background:var(--paper);border:2px solid var(--ink);border-radius:var(--r);padding:26px 30px;min-width:360px;max-width:560px;width:92%;box-shadow:5px 5px 0 var(--ink);animation:pi .2s ease;}
+@keyframes pi{from{opacity:0;transform:scale(.96) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.phd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.ptitle{font-size:15px;font-weight:900;}
+.pclose{background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink3);line-height:1;}
+.pclose:hover{color:var(--ink);}
+.alist{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+.ai{display:flex;gap:10px;padding:10px 12px;border-radius:var(--r);font-size:13px;line-height:1.5;}
+.ai.hard{background:var(--rbg);border:1px solid #f5bfb4;border-left:3px solid var(--red);}
+.ai.soft{background:var(--abg);border:1px solid #f5d6a8;border-left:3px solid var(--amber);}
+.ai.none{background:var(--gbg);border:1px solid #b8ddc8;border-left:3px solid var(--green);}
+.ai-ico{font-size:15px;flex-shrink:0;}
+.ai-ct strong{display:block;font-weight:700;margin-bottom:1px;}
+.ai-ct small{color:var(--ink3);font-size:12px;}
+.phint{background:var(--paper2);border-radius:var(--r);padding:9px 12px;font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px;border:1px solid var(--border);}
+.pa{display:flex;justify-content:flex-end;}
+/* Rx */
+.rx-sec{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
+.rx-st{padding:11px 18px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);}
+.rx-b{padding:18px;}
+.pt-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:10px;}
+/* Daily calc display */
+.daily-calc{background:var(--gbg);border:1px solid #b8ddc8;border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--green);font-family:var(--mono);margin-top:8px;display:none;}
+/* Saved badge */
+.saved-badge{font-size:11px;color:var(--green);font-family:var(--mono);padding:4px 8px;background:var(--gbg);border:1px solid #b8ddc8;border-radius:var(--r);display:none;}
+/* Utils */
+.flex{display:flex;}.gap8{gap:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="lcard">
+    <div class="llogo">PharmAlert · 藥品警訊模擬平台</div>
+    <div class="ltitle">醫囑警訊<br>模擬學習系統</div>
+    <div class="lsub">課後自主練習 · 完成後提交 JSON 作業檔給老師</div>
+    <div class="lg"><label class="ll">你的姓名</label><input class="li" id="l-name" placeholder="例：林○○"/></div>
+    <div class="lg">
+      <label class="ll">指定藥品名稱</label>
+      <input class="li" id="l-drug" placeholder="例：Vancomycin"/>
+      <div class="lhint">請輸入老師指派給你的藥品名稱</div>
+    </div>
+    <button class="btn-start" onclick="startNew()">開始作業 →</button>
+    <div class="ldiv">或載入已有作業</div>
+    <button class="btn-load-file" onclick="document.getElementById('fi').click()">📂 載入作業檔案（.json）</button>
+    <input type="file" id="fi" accept=".json" style="display:none" onchange="loadFile(event)"/>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--ink3);line-height:1.8;">
+      <div>© 2026 tzuhaoshan · All rights reserved</div>
+      <div><a href="mailto:aa0956266386@gmail.com" style="color:var(--ink3);text-decoration:none;letter-spacing:.02em;">aa0956266386@gmail.com</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app">
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">PharmAlert</div>
+    <div class="sb-drug" id="sb-drug">—<span id="sb-name">—</span></div>
+  </div>
+  <nav class="nav-sec">
+    <div class="nav-sec-lbl">警訊設定</div>
+    <div class="ni active" id="nav-1" onclick="showPanel('p1')"><span class="nn">1</span>誰可以使用</div>
+    <div class="ni" id="nav-2" onclick="showPanel('p2')"><span class="nn">2</span>怎麼使用</div>
+    <div class="ni" id="nav-3" onclick="showPanel('p3')"><span class="nn">3</span>可以用多少</div>
+  </nav>
+  <nav class="nav-sec">
+    <div class="nav-sec-lbl">驗證</div>
+    <div class="ni" id="nav-rx" onclick="showPanel('p-rx')"><span class="nn" style="border-radius:3px">▶</span>開處方驗證</div>
+  </nav>
+  <div class="sb-footer">
+    <div class="pb-lbl">完成進度 <span id="prog-pct">0%</span></div>
+    <div class="pb"><div class="pb-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--ink3)" id="tb-drug">—</span>
+      <span style="color:var(--border)">·</span>
+      <span id="tb-panel">① 誰可以使用</span>
+    </div>
+    <div class="tb-actions">
+      <span class="saved-badge" id="saved-badge">✓ 已暫存</span>
+      <button class="btn btn-ghost btn-sm" id="btn-save" onclick="manualSave()">💾 暫存</button>
+      <button class="btn btn-green btn-sm" onclick="submitWork()">提交作業 →</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- P1 -->
+    <div class="panel show" id="p1">
+      <div class="ph"><div class="pey">區塊一</div><div class="pt">誰可以使用</div><div class="pd">設定適用白名單。留空表示不設限制。</div></div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">👤 性別</div>
+          <select class="als soft" id="lv-gender" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">勾選允許的性別。勾「不設限」則不驗證性別。</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="dopt on" id="opt-male"><input type="checkbox" checked onchange="togOpt(this,'opt-male')"> 男性</label>
+            <label class="dopt on" id="opt-female"><input type="checkbox" checked onchange="togOpt(this,'opt-female')"> 女性</label>
+            <label class="dopt" id="opt-nolimit"><input type="checkbox" onchange="togOpt(this,'opt-nolimit')"> 不設限</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">📅 年齡範圍</div>
+          <select class="als soft" id="lv-age" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note amber">填入的年齡範圍 = 允許使用範圍。落在範圍外才觸發。留空 = 不限制。</div>
+          <div class="frow">
+            <div class="fg" style="max-width:140px"><label class="fl">最小年齡（歲）</label><input class="fi" type="number" id="age-min" placeholder="留空=不限"/></div>
+            <div style="padding-bottom:9px;color:var(--ink3)">—</div>
+            <div class="fg" style="max-width:140px"><label class="fl">最大年齡（歲）</label><input class="fi" type="number" id="age-max" placeholder="留空=不限"/></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">🩺 適應症白名單</div>
+          <select class="als soft" id="lv-ind" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">輸入允許的適應症，按 Enter 新增。留空 = 不限制。</div>
+          <div class="trow"><input class="fi" id="ind-in" placeholder="例：MRSA infection" style="flex:1" onkeydown="if(event.key==='Enter'){addTag('ind-in','ind-tags');event.preventDefault()}"/><button class="btn btn-ghost btn-sm" onclick="addTag('ind-in','ind-tags')">＋ 新增</button></div>
+          <div class="tags" id="ind-tags"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">🏥 科別白名單</div>
+          <select class="als soft" id="lv-dept" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">輸入允許開立此藥品的科別。留空 = 不限制。</div>
+          <div class="trow"><input class="fi" id="dept-in" placeholder="例：感染科、ICU" style="flex:1" onkeydown="if(event.key==='Enter'){addTag('dept-in','dept-tags');event.preventDefault()}"/><button class="btn btn-ghost btn-sm" onclick="addTag('dept-in','dept-tags')">＋ 新增</button></div>
+          <div class="tags" id="dept-tags"></div>
+        </div>
+      </div>
+      <div class="flex gap8 mt16"><button class="btn btn-ink" onclick="showPanel('p2')">下一區塊：怎麼使用 →</button></div>
+    </div>
+
+    <!-- P2 -->
+    <div class="panel" id="p2">
+      <div class="ph"><div class="pey">區塊二</div><div class="pt">怎麼使用</div><div class="pd">設定給藥途徑與針劑稀釋條件的白名單。若非針劑，稀釋液區塊可留空。</div></div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">💉 給藥途徑白名單</div>
+          <select class="als hard" id="lv-route" onchange="als(this)"><option value="hard">🚫 限制</option><option value="soft">⚠️ 警示</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">輸入允許的給藥途徑。</div>
+          <div class="trow"><input class="fi" id="route-in" placeholder="例：IV、IVPB、PO" style="flex:1" onkeydown="if(event.key==='Enter'){addWlt('route-in','route-tags');event.preventDefault()}"/><button class="btn btn-ghost btn-sm" onclick="addWlt('route-in','route-tags')">＋ 新增</button></div>
+          <div class="tags" id="route-tags"><div class="wlt">IV <span class="tr" onclick="this.closest('.wlt').remove()">×</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">🧪 針劑稀釋液（選填）</div>
+          <select class="als soft" id="lv-dil" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">勾選允許搭配的稀釋液與輸液袋材質。<strong>若非針劑，可全部不勾，開處方時稀釋液欄位將不驗證。</strong></div>
+          <div class="dil-grid">
+            <div>
+              <div class="dgl">稀釋液</div>
+              <div class="dil-options">
+                <label class="dopt" id="dil-ns"><input type="checkbox" onchange="togOpt(this,'dil-ns')"> NS</label>
+                <label class="dopt" id="dil-d5w"><input type="checkbox" onchange="togOpt(this,'dil-d5w')"> D5W</label>
+                <label class="dopt" id="dil-d10w"><input type="checkbox" onchange="togOpt(this,'dil-d10w')"> D10W</label>
+                <label class="dopt" id="dil-lr"><input type="checkbox" onchange="togOpt(this,'dil-lr')"> LR</label>
+                <label class="dopt" id="dil-sw"><input type="checkbox" onchange="togOpt(this,'dil-sw')"> SWFI</label>
+              </div>
+            </div>
+            <div>
+              <div class="dgl">輸液袋材質</div>
+              <div class="dil-options">
+                <label class="dopt" id="bag-pp"><input type="checkbox" onchange="togOpt(this,'bag-pp')"> PP 袋</label>
+                <label class="dopt" id="bag-pe"><input type="checkbox" onchange="togOpt(this,'bag-pe')"> PE 袋</label>
+                <label class="dopt" id="bag-pvc"><input type="checkbox" onchange="togOpt(this,'bag-pvc')"> PVC 袋</label>
+                <label class="dopt" id="bag-glass"><input type="checkbox" onchange="togOpt(this,'bag-glass')"> 玻璃瓶</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap8 mt16">
+        <button class="btn btn-ghost" onclick="showPanel('p1')">← 上一區塊</button>
+        <button class="btn btn-ink" onclick="showPanel('p3')">下一區塊：可以用多少 →</button>
+      </div>
+    </div>
+
+    <!-- P3 -->
+    <div class="panel" id="p3">
+      <div class="ph"><div class="pey">區塊三</div><div class="pt">可以用多少</div><div class="pd">先設定藥品含量單位與規格，再設定劑量與頻次的白名單條件。</div></div>
+
+      <!-- 藥品規格設定 -->
+      <div class="card">
+        <div class="ch"><div class="ct">💊 藥品含量與規格設定</div></div>
+        <div class="cb">
+          <div class="note blue">設定此藥品的含量單位與劑型規格。開處方驗證時可用規格單位（tab、mL）輸入，系統會自動換算成含量單位後驗證。</div>
+          <div class="frow" style="align-items:flex-start;gap:16px">
+            <div class="fg" style="width:160px;flex:0 0 160px">
+              <label class="fl">含量單位</label>
+              <select class="fs" id="drug-content-unit" onchange="onDrugUnitChange()">
+                <option value="mg">mg</option>
+                <option value="mcg">mcg</option>
+                <option value="g">g</option>
+                <option value="ng">ng</option>
+                <option value="mL">mL</option>
+                <option value="L">L</option>
+                <option value="U">U</option>
+                <option value="kU">kU</option>
+                <option value="mU">mU</option>
+                <option value="mEq">mEq</option>
+                <option value="mmol">mmol</option>
+                <option value="custom">自訂單位</option>
+              </select>
+            </div>
+            <div class="fg" id="custom-unit-wrap" style="display:none;width:160px;flex:0 0 160px">
+              <label class="fl">自訂單位名稱</label>
+              <input class="fi" id="drug-custom-unit" placeholder="例：mmol"/>
+            </div>
+            <div class="fg" id="valence-wrap" style="display:none;width:160px;flex:0 0 160px">
+              <label class="fl">Valence 係數<span style="font-size:10px;font-weight:400;letter-spacing:.04em;opacity:.7;margin-left:5px">(mEq↔mmol)</span></label>
+              <input class="fi" id="drug-valence" type="number" placeholder="Na⁺=1, Ca²⁺=2" min="0.001" step="0.001" oninput="updateSpecPreview()"/>
+              <div style="font-size:11px;color:var(--ink3);margin-top:3px">mmol × valence = mEq</div>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="fl" style="margin-bottom:8px">規格設定（可新增多個規格）</div>
+            <div id="drug-specs"></div>
+            <button class="btn btn-ghost btn-sm mt12" onclick="addDrugSpec()">＋ 新增規格</button>
+          </div>
+          <div id="spec-preview" style="display:none;margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- 劑量條件 -->
+      <div class="card">
+        <div class="ch"><div class="ct">⚖️ 劑量條件</div></div>
+        <div class="cb">
+          <div class="note amber">⚠️ <strong>白名單邏輯：</strong>條件式定義「允許條件」。例如 <code style="font-family:var(--mono);background:var(--paper2);padding:1px 4px;border-radius:2px">每日劑量 ≤ 4500 mg</code>，超過才跳警訊。</div>
+          <div id="dose-conds"></div>
+          <button class="btn btn-ghost btn-sm mt12" onclick="addDoseCond()">＋ 新增劑量條件</button>
+        </div>
+      </div>
+
+      <!-- 頻次條件 -->
+      <div class="card">
+        <div class="ch"><div class="ct">🔁 頻次條件（選填）</div>
+          <select class="als soft" id="lv-freq" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">設定允許的給藥頻次白名單。開處方選到不在清單的頻次將觸發警訊。留空表示不限制頻次。</div>
+          <div class="trow">
+            <select class="fs" id="freq-sel" style="flex:1;max-width:220px">
+              <option value="">— 選擇頻次 —</option>
+              <optgroup label="每日固定頻次">
+                <option>QD（每日一次）</option><option>BID（每日兩次）</option>
+                <option>TID（每日三次）</option><option>QID（每日四次）</option>
+              </optgroup>
+              <optgroup label="固定時間間隔">
+                <option>Q4H（每4小時）</option><option>Q6H（每6小時）</option>
+                <option>Q8H（每8小時）</option><option>Q12H（每12小時）</option>
+                <option>Q24H（每24小時）</option><option>Q36H（每36小時）</option>
+                <option>Q48H（每48小時）</option><option>Q72H（每72小時）</option>
+              </optgroup>
+              <optgroup label="按需與間歇">
+                <option>PRN（需要時）</option><option>QOD（隔日）</option>
+                <option>QW（每週一次）</option><option>BIW（每週兩次）</option>
+                <option>TIW（每週三次）</option><option>Q2W（每兩週）</option>
+                <option>QM（每月一次）</option>
+              </optgroup>
+              <optgroup label="透析相關">
+                <option>Post-HD（透析後）</option><option>During HD（透析中）</option>
+              </optgroup>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="addFreqTag()">＋ 新增</button>
+          </div>
+          <div class="tags" id="freq-tags"></div>
+        </div>
+      </div>
+
+      <!-- 腎功能 -->
+      <div class="card">
+        <div class="ch"><div class="ct">🫘 腎功能劑量限制</div></div>
+        <div class="cb">
+          <div class="note blue">可新增多組腎功能指標。每個區間可各自選擇控管「每次劑量」或「每日劑量」。</div>
+          <div id="renal-groups"></div>
+          <button class="btn btn-ghost btn-sm mt12" onclick="addRenalGroup()">＋ 新增腎功能指標組</button>
+        </div>
+      </div>
+
+      <!-- 肝功能 -->
+      <div class="card">
+        <div class="ch"><div class="ct">🫀 肝功能劑量限制（Child-Pugh）</div></div>
+        <div class="cb">
+          <div class="note blue">依 Child-Pugh 分級設定劑量條件。留空表示不設限制。</div>
+          <div id="hep-tiers">
+            <div class="tier-row" data-cp="A"><span class="tlbl">C-P A</span>
+              <select class="fs" style="width:110px;font-size:12px;padding:5px 7px"><option value="daily">每日劑量</option><option value="single">每次劑量</option></select>
+              <select class="cs"><option value="lte">≤</option><option value="lt">&lt;</option><option value="gte">≥</option><option value="gt">&gt;</option></select>
+              <input class="cn" type="number" placeholder="劑量"/><input class="ut" placeholder="mg"/>
+              <input class="fi" placeholder="說明（選填）" style="flex:1;font-size:12px;padding:5px 9px"/>
+              <select class="als soft" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+            </div>
+            <div class="tier-row" data-cp="B"><span class="tlbl">C-P B</span>
+              <select class="fs" style="width:110px;font-size:12px;padding:5px 7px"><option value="daily">每日劑量</option><option value="single">每次劑量</option></select>
+              <select class="cs"><option value="lte">≤</option><option value="lt">&lt;</option><option value="gte">≥</option><option value="gt">&gt;</option></select>
+              <input class="cn" type="number" placeholder="劑量"/><input class="ut" placeholder="mg"/>
+              <input class="fi" placeholder="說明（選填）" style="flex:1;font-size:12px;padding:5px 9px"/>
+              <select class="als soft" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+            </div>
+            <div class="tier-row" data-cp="C"><span class="tlbl">C-P C</span>
+              <select class="fs" style="width:110px;font-size:12px;padding:5px 7px"><option value="daily">每日劑量</option><option value="single">每次劑量</option></select>
+              <select class="cs"><option value="lte">≤</option><option value="lt">&lt;</option><option value="gte">≥</option><option value="gt">&gt;</option></select>
+              <input class="cn" type="number" placeholder="劑量"/><input class="ut" placeholder="mg"/>
+              <input class="fi" placeholder="說明（選填）" style="flex:1;font-size:12px;padding:5px 9px"/>
+              <select class="als hard" onchange="als(this)"><option value="hard">🚫 限制</option><option value="soft">⚠️ 警示</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap8 mt16">
+        <button class="btn btn-ghost" onclick="showPanel('p2')">← 上一區塊</button>
+        <button class="btn btn-ink" onclick="showPanel('p-rx')">前往開處方驗證 →</button>
+      </div>
+    </div>
+
+    <!-- P-RX -->
+    <div class="panel" id="p-rx">
+      <div class="ph"><div class="pey">開處方驗證</div><div class="pt">模擬開立處方</div><div class="pd">依照你設定的警訊條件即時判斷。沒有對錯評判——用來測試自己的邏輯是否符合預期。</div></div>
+      <div class="note amber">💡 劑量單位可選含量單位（mg）或規格單位（tab、mL 等），系統自動換算後驗證。PRN / QOD 等特殊頻次不換算每日劑量，只驗證單次劑量。</div>
+
+      <div class="rx-sec">
+        <div class="rx-st">🏥 模擬病人資料</div>
+        <div class="rx-b">
+          <div class="pt-g">
+            <div class="fg"><label class="fl">年齡（歲）</label><input class="fi" id="pt-age" type="number" value="72"/></div>
+            <div class="fg"><label class="fl">性別</label><select class="fs" id="pt-sex"><option value="男">男</option><option value="女">女</option></select></div>
+            <div class="fg"><label class="fl">體重（kg）</label><input class="fi" id="pt-wt" type="number" value="60"/></div>
+            <div class="fg"><label class="fl">適應症</label><input class="fi" id="pt-ind" value="MRSA bacteremia"/></div>
+            <div class="fg"><label class="fl">開立科別</label><input class="fi" id="pt-dept" value="感染科"/></div>
+          </div>
+          <div id="pt-renal-fields" class="pt-g" style="margin-bottom:10px"></div>
+          <div class="pt-g">
+            <div class="fg"><label class="fl">Child-Pugh</label>
+              <select class="fs" id="pt-cp"><option value="">不適用</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rx-sec">
+        <div class="rx-st">📝 處方內容</div>
+        <div class="rx-b">
+          <div class="pt-g" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr))">
+            <div class="fg"><label class="fl">藥品</label><input class="fi" id="rx-drug" style="background:var(--paper2);font-weight:700" readonly/></div>
+            <div class="fg">
+              <label class="fl">單次劑量</label>
+              <input class="fi" id="rx-single" type="number" value="1" oninput="calcDaily()"/>
+            </div>
+            <div class="fg">
+              <label class="fl">劑量單位</label>
+              <select class="fs" id="rx-unit" onchange="calcDaily()" style="font-family:var(--mono)">
+                <option value="__content__" id="rx-unit-content">mg（含量單位）</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="fl">頻次</label>
+              <select class="fs" id="rx-freq" onchange="calcDaily()">
+                <optgroup label="每日固定頻次">
+                  <option value="QD">QD（每日一次）</option><option value="BID">BID（每日兩次）</option>
+                  <option value="TID">TID（每日三次）</option><option value="QID">QID（每日四次）</option>
+                </optgroup>
+                <optgroup label="固定時間間隔">
+                  <option value="Q4H">Q4H（每4小時）</option><option value="Q6H">Q6H（每6小時）</option>
+                  <option value="Q8H">Q8H（每8小時）</option><option value="Q12H">Q12H（每12小時）</option>
+                  <option value="Q24H">Q24H（每24小時）</option><option value="Q36H">Q36H（每36小時）</option>
+                  <option value="Q48H">Q48H（每48小時）</option><option value="Q72H">Q72H（每72小時）</option>
+                </optgroup>
+                <optgroup label="按需與間歇">
+                  <option value="PRN">PRN（需要時）</option><option value="QOD">QOD（隔日）</option>
+                  <option value="QW">QW（每週一次）</option><option value="BIW">BIW（每週兩次）</option>
+                  <option value="TIW">TIW（每週三次）</option><option value="Q2W">Q2W（每兩週）</option>
+                  <option value="QM">QM（每月一次）</option>
+                </optgroup>
+                <optgroup label="透析相關">
+                  <option value="Post-HD">Post-HD（透析後）</option><option value="During-HD">During HD（透析中）</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">給藥途徑</label><input class="fi" id="rx-route" value="IV"/></div>
+          </div>
+          <div class="daily-calc" id="daily-calc"></div>
+          <div id="rx-dil-fields"></div>
+          <div style="margin-top:14px">
+            <button class="btn btn-ink" onclick="checkRx()" style="font-size:14px;padding:10px 20px">🔍 驗證處方</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Popup -->
+<div class="overlay" id="overlay">
+  <div class="popup">
+    <div class="phd"><div class="ptitle">⚠️ 處方警訊結果</div><button class="pclose" onclick="closePopup()">×</button></div>
+    <div class="alist" id="alist"></div>
+    <div class="phint" id="phint"></div>
+    <div class="pa"><button class="btn btn-ghost btn-sm" onclick="closePopup()">關閉</button></div>
+  </div>
+</div>
+
+<script>
+// ══ Constants ══
+const FREQ_MULTIPLIER = {
+  QD:1, BID:2, TID:3, QID:4,
+  Q4H:6, Q6H:4, Q8H:3, Q12H:2, Q24H:1, Q36H:0.67, Q48H:0.5, Q72H:0.33,
+  QW:0.14, BIW:0.29, TIW:0.43, Q2W:0.07, QM:0.033,
+  'Post-HD':null, 'During-HD':null, PRN:null, QOD:null
+};
+function getStorageKey(){ return `pharmalert_${studentName}_${drugName}`; }
+let fileHandle = null;       // File System Access API handle
+let filePickerOffered = false; // 只在第一次手動存時詢問
+const PANEL_NAMES = {'p1':'① 誰可以使用','p2':'② 怎麼使用','p3':'③ 可以用多少','p-rx':'▶ 開處方驗證'};
+
+// ══ Unit conversion ══
+const UNIT_BASE = {
+  // mass → mg
+  'ng':1e-6,'mcg':0.001,'ug':0.001,'mg':1,'g':1000,
+  // volume → mL
+  'mL':1,'ml':1,'L':1000,'l':1000,
+  // units → U
+  'mU':0.001,'U':1,'kU':1000,'KU':1000,
+  // mEq & mmol handled separately (need valence)
+};
+function unitFamily(u){
+  if(['ng','mcg','ug','mg','g'].includes(u))return'mass';
+  if(['mL','ml','L','l'].includes(u))return'vol';
+  if(['mU','U','kU','KU'].includes(u))return'unit';
+  if(['mEq','mmol'].includes(u))return'electrolyte';
+  return null;
+}
+function getValence(){
+  return parseFloat(document.getElementById('drug-valence')?.value)||1;
+}
+function convertUnit(val, fromU, toU){
+  if(fromU===toU)return val;
+  const fam=unitFamily(fromU);
+  if(!fam||fam!==unitFamily(toU))return null;
+  if(fam==='electrolyte'){
+    // mmol × valence = mEq
+    const valence=getValence();
+    if(fromU==='mmol'&&toU==='mEq')return val*valence;
+    if(fromU==='mEq'&&toU==='mmol')return val/valence;
+    return null;
+  }
+  const baseVal=val*(UNIT_BASE[fromU]??1);
+  return baseVal/(UNIT_BASE[toU]??1);
+}
+
+// ══ State ══
+let studentName='', drugName='';
+let doseCondIdx=0, renalGroupIdx=0, specIdx=0;
+
+// ══ Drug spec helpers ══
+function getContentUnit(){
+  const sel=document.getElementById('drug-content-unit');
+  if(!sel)return'mg';
+  return sel.value==='custom'?(document.getElementById('drug-custom-unit')?.value||'mg'):sel.value;
+}
+
+function onDrugUnitChange(){
+  const sel=document.getElementById('drug-content-unit');
+  const v=sel.value;
+  document.getElementById('custom-unit-wrap').style.display=v==='custom'?'block':'none';
+  document.getElementById('valence-wrap').style.display=(v==='mEq'||v==='mmol')?'block':'none';
+  updateSpecPreview();
+  updateRxUnitSelector();
+}
+
+function addDrugSpec(saved){
+  const sid='spec-'+specIdx++;
+  const s=saved||{};
+  const cu=getContentUnit();
+  const div=document.createElement('div');
+  div.id=sid;
+  div.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML=`
+    <span style="font-size:12px;color:var(--ink3);font-family:var(--mono)">1</span>
+    <input class="fi" placeholder="規格單位（如 tab、mL、cap）" style="width:130px" data-field="specUnit" value="${s.specUnit||''}" oninput="updateSpecPreview()"/>
+    <span style="font-size:12px;color:var(--ink3)">=</span>
+    <input class="cn" type="number" placeholder="含量數值" data-field="specAmt" value="${s.specAmt||''}" oninput="updateSpecPreview()"/>
+    <span class="spec-cu-label" style="font-size:13px;font-family:var(--mono);color:var(--green);min-width:28px">${cu}</span>
+    <button class="bico" onclick="document.getElementById('${sid}').remove();updateSpecPreview();updateRxUnitSelector()">✕</button>`;
+  document.getElementById('drug-specs').appendChild(div);
+  updateRxUnitSelector();
+}
+
+function updateSpecPreview(){
+  const cu=getContentUnit();
+  // update all spec-cu-labels
+  document.querySelectorAll('.spec-cu-label').forEach(el=>el.textContent=cu);
+  const specs=getSpecs();
+  const preview=document.getElementById('spec-preview');
+  if(specs.length===0){preview.style.display='none';return;}
+  preview.style.display='block';
+  preview.innerHTML=`<div style="background:var(--gbg);border:1px solid #b8ddc8;border-radius:var(--r);padding:9px 13px;font-size:12px;color:var(--green);font-family:var(--mono)">`+
+    specs.map(s=>`1 ${s.specUnit} = ${s.specAmt} ${cu}`).join('　|　')+`</div>`;
+}
+
+function getSpecs(){
+  const specs=[];
+  document.querySelectorAll('#drug-specs > div').forEach(div=>{
+    const su=div.querySelector('[data-field="specUnit"]')?.value?.trim();
+    const sa=parseFloat(div.querySelector('[data-field="specAmt"]')?.value);
+    if(su&&!isNaN(sa)&&sa>0)specs.push({specUnit:su,specAmt:sa});
+  });
+  return specs;
+}
+
+// Convert rx input to content unit amount (mg/mcg/etc)
+// rxVal: number, rxUnitVal: the value from rx-unit select
+// returns {amountInContentUnit, contentUnit} or null
+function rxToContentUnit(rxVal, rxUnitVal){
+  const cu=getContentUnit();
+  if(rxUnitVal==='__content__'){
+    // already in content unit — but may need to handle unit conversion
+    return{amount:rxVal,contentUnit:cu};
+  }
+  // check if it's a known SI unit (auto-convert)
+  const conv=convertUnit(rxVal, rxUnitVal, cu);
+  if(conv!==null)return{amount:conv,contentUnit:cu};
+  // check if it's a spec unit
+  const specs=getSpecs();
+  const sp=specs.find(s=>s.specUnit.toLowerCase()===rxUnitVal.toLowerCase());
+  if(sp)return{amount:rxVal*sp.specAmt,contentUnit:cu};
+  return{amount:rxVal,contentUnit:rxUnitVal}; // unknown unit, pass-through
+}
+
+function updateRxUnitSelector(){
+  const sel=document.getElementById('rx-unit');
+  if(!sel)return;
+  const cu=getContentUnit();
+  const specs=getSpecs();
+  // Collect all SI units in same family
+  const fam=unitFamily(cu);
+  const siUnits={'mass':['ng','mcg','mg','g'],'vol':['mL','L'],'unit':['mU','U','kU'],'electrolyte':['mEq','mmol']}[fam]||[];
+  sel.innerHTML=`<option value="__content__">${cu}（含量單位）</option>`;
+  siUnits.filter(u=>u!==cu).forEach(u=>{
+    const opt=document.createElement('option');opt.value=u;opt.textContent=u;sel.appendChild(opt);
+  });
+  specs.forEach(sp=>{
+    const opt=document.createElement('option');opt.value=sp.specUnit;opt.textContent=`${sp.specUnit}（規格單位）`;sel.appendChild(opt);
+  });
+  calcDaily();
+}
+
+// ══ Login ══
+function startNew(){
+  const n=document.getElementById('l-name').value.trim();
+  const d=document.getElementById('l-drug').value.trim();
+  if(!n||!d){alert('請填寫姓名與藥品名稱');return;}
+  studentName=n; drugName=d;
+  const saved=localStorage.getItem(getStorageKey());
+  if(saved){
+    try{
+      const data=JSON.parse(saved);
+      if(confirm(`找到「${n} — ${d}」的暫存資料，是否載入？`)){
+        enterApp(); restoreData(data); return;
+      }
+    }catch(e){}
+  }
+  enterApp();
+  addDoseCond(); // default one dose condition
+}
+
+function enterApp(){
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-app').style.display='block';
+  document.getElementById('sb-drug').childNodes[0].textContent=drugName;
+  document.getElementById('sb-name').textContent=studentName;
+  document.getElementById('tb-drug').textContent=drugName;
+  document.getElementById('rx-drug').value=drugName;
+  updateRxUnitSelector();
+}
+
+// ══ Nav ══
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const map={'p1':'nav-1','p2':'nav-2','p3':'nav-3','p-rx':'nav-rx'};
+  if(map[id]){document.getElementById(map[id]).classList.add('active','filled');}
+  document.getElementById('tb-panel').textContent=PANEL_NAMES[id]||'';
+  updateProgress();
+  if(id==='p-rx'){renderRenalPtFields();renderDilFields();updateRxUnitSelector();}
+}
+
+function updateProgress(){
+  const done=['nav-1','nav-2','nav-3'].filter(id=>document.getElementById(id).classList.contains('filled')).length;
+  const pct=Math.round(done/3*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+}
+
+// ══ Helpers ══
+function als(el){el.className='als';el.classList.add(el.value==='hard'?'hard':'soft');}
+function togOpt(cb,id){document.getElementById(id).classList.toggle('on',cb.checked);}
+function addTag(inId,tagsId){
+  const inp=document.getElementById(inId),v=inp.value.trim();if(!v)return;
+  const d=document.createElement('div');d.className='tag';
+  d.innerHTML=`${v} <span class="tr" onclick="this.closest('.tag').remove()">×</span>`;
+  document.getElementById(tagsId).appendChild(d);inp.value='';inp.focus();
+}
+function addWlt(inId,tagsId){
+  const inp=document.getElementById(inId),v=inp.value.trim();if(!v)return;
+  const d=document.createElement('div');d.className='wlt';
+  d.innerHTML=`${v} <span class="tr" onclick="this.closest('.wlt').remove()">×</span>`;
+  document.getElementById(tagsId).appendChild(d);inp.value='';inp.focus();
+}
+function addFreqTag(){
+  const sel=document.getElementById('freq-sel'),v=sel.value;if(!v)return;
+  const label=sel.options[sel.selectedIndex].text;
+  const d=document.createElement('div');d.className='tag';
+  d.dataset.freq=v;
+  d.innerHTML=`${label} <span class="tr" onclick="this.closest('.tag').remove()">×</span>`;
+  document.getElementById('freq-tags').appendChild(d);
+  sel.value='';
+}
+
+// ══ Frequency → daily multiplier ══
+function getFreqMult(freq){return FREQ_MULTIPLIER[freq]??null;}
+
+function calcDaily(){
+  const single=parseFloat(document.getElementById('rx-single').value)||0;
+  const rxUnitVal=document.getElementById('rx-unit')?.value||'__content__';
+  const freq=document.getElementById('rx-freq')?.value||'QD';
+  const cu=getContentUnit();
+  const mult=getFreqMult(freq);
+  const el=document.getElementById('daily-calc');
+  if(!el)return;
+
+  const conv=rxToContentUnit(single, rxUnitVal);
+  const singleInCU=conv?.amount??single;
+  const displayUnit=conv?.contentUnit||cu;
+
+  let lines=[];
+  // Show conversion if using spec/SI unit
+  if(rxUnitVal!=='__content__'&&single>0){
+    lines.push(`換算：${single} ${rxUnitVal} = ${singleInCU.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit}`);
+  }
+  if(mult===null){
+    lines.push(`${freq}：特殊頻次，不換算每日劑量，僅驗證單次劑量 ${singleInCU.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit}`);
+  } else if(single>0){
+    const daily=(singleInCU*mult);
+    lines.push(`每日劑量：${singleInCU.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit} × ${mult} = ${daily.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit}/day`);
+  }
+  if(lines.length>0){el.style.display='block';el.innerHTML=lines.join('<br>');}
+  else{el.style.display='none';}
+}
+
+// ══ Dose condition ══
+function makeDoseCondHTML(id, saved){
+  const s=saved||{};
+  return `
+    <div class="dc-card" id="${id}" data-dc>
+      <div class="dc-hdr">
+        <select class="fs" style="width:130px;font-family:var(--mono);font-size:12px;padding:5px 8px" data-field="type">
+          <option value="daily"${s.type==='daily'||!s.type?' selected':''}>每日劑量</option>
+          <option value="single"${s.type==='single'?' selected':''}>每次劑量</option>
+          <option value="max_single"${s.type==='max_single'?' selected':''}>單次最大劑量</option>
+        </select>
+        <select class="als ${(s.level||'hard')==='hard'?'hard':'soft'}" onchange="als(this)" data-field="level">
+          <option value="hard"${(s.level||'hard')==='hard'?' selected':''}>🚫 限制</option>
+          <option value="soft"${s.level==='soft'?' selected':''}>⚠️ 警示</option>
+        </select>
+        <button class="bico" onclick="document.getElementById('${id}').remove()" style="margin-left:auto">✕</button>
+      </div>
+      <div class="dc-body">
+        <div class="dc-row">
+          <span class="dc-rl">年齡區間</span>
+          ≥ <input class="cn" type="number" placeholder="min" style="width:68px" data-field="ageMin" value="${s.ageMin||''}"/>
+          <span style="font-size:12px;color:var(--ink3)">且</span>
+          ≤ <input class="cn" type="number" placeholder="max" style="width:68px" data-field="ageMax" value="${s.ageMax||''}"/>
+          <span style="font-size:11px;color:var(--ink3)">歲（留空=不限）</span>
+        </div>
+        <div class="dc-row">
+          <span class="dc-rl">體重區間</span>
+          ≥ <input class="cn" type="number" placeholder="min" style="width:68px" data-field="wtMin" value="${s.wtMin||''}"/>
+          <span style="font-size:12px;color:var(--ink3)">且</span>
+          ≤ <input class="cn" type="number" placeholder="max" style="width:68px" data-field="wtMax" value="${s.wtMax||''}"/>
+          <span style="font-size:11px;color:var(--ink3)">kg（留空=不限）</span>
+        </div>
+        <div class="dc-row">
+          <span class="dc-rl">劑量閾值</span>
+          <select class="cs" data-field="op">
+            <option value="lte"${(s.op||'lte')==='lte'?' selected':''}>≤</option>
+            <option value="lt"${s.op==='lt'?' selected':''}>＜</option>
+            <option value="gte"${s.op==='gte'?' selected':''}>≥</option>
+            <option value="gt"${s.op==='gt'?' selected':''}>＞</option>
+          </select>
+          <input class="cn" type="number" placeholder="數值" data-field="threshold" value="${s.threshold||''}"/>
+          <input class="ut" placeholder="mg" data-field="unit" value="${s.unit||''}"/>
+          <label class="kg-wrap${s.perKg?' on':''}" onclick="this.classList.toggle('on')">
+            <input type="checkbox" data-field="perKg"${s.perKg?' checked':''} onchange="this.parentElement.classList.toggle('on',this.checked)"> /kg
+          </label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addDoseCond(saved){
+  const id='dc-'+doseCondIdx++;
+  document.getElementById('dose-conds').insertAdjacentHTML('beforeend', makeDoseCondHTML(id, saved));
+}
+
+// ══ Renal group ══
+function makeRenalTierHTML(basis, saved){
+  const s=saved||{};
+  const isDialysis=['HD','PD','CRRT'].includes(basis);
+  if(isDialysis){
+    return `<div class="tier-row" data-dialysis>
+      <span class="tlbl">${basis}</span>
+      <select class="cs" data-field="op">
+        <option value="lte"${(s.op||'lte')==='lte'?' selected':''}>≤</option><option value="lt"${s.op==='lt'?' selected':''}>＜</option>
+        <option value="gte"${s.op==='gte'?' selected':''}>≥</option><option value="gt"${s.op==='gt'?' selected':''}>＞</option>
+      </select>
+      <input class="cn" type="number" placeholder="劑量" data-field="val" value="${s.val||''}"/>
+      <input class="ut" placeholder="mg" data-field="unit" value="${s.unit||''}"/>
+      <input class="fi" placeholder="說明（選填）" style="flex:1;font-size:12px;padding:5px 9px" data-field="note" value="${s.note||''}"/>
+      <select class="als ${(s.lv||'soft')==='hard'?'hard':'soft'}" onchange="als(this)" data-field="lv">
+        <option value="soft"${(s.lv||'soft')==='soft'?' selected':''}>⚠️ 警示</option>
+        <option value="hard"${s.lv==='hard'?' selected':''}>🚫 限制</option>
+      </select>
+      <button class="bico" onclick="this.closest('.tier-row').remove()">✕</button>
+    </div>`;
+  }
+  const unitLbl=basis==='SCr'?'mg/dL':'ml/min';
+  return `<div class="tier-row" data-renal-range>
+    <span class="tlbl" style="font-size:11px">${basis}</span>
+    <select class="cs" style="width:46px" data-field="op1">
+      <option value="gte"${(s.op1||'gte')==='gte'?' selected':''}>≥</option><option value="gt"${s.op1==='gt'?' selected':''}>＞</option>
+      <option value="lte"${s.op1==='lte'?' selected':''}>≤</option><option value="lt"${s.op1==='lt'?' selected':''}>＜</option>
+    </select>
+    <input class="cn" type="number" placeholder="下限" style="width:66px" data-field="lo" value="${s.lo||''}"/>
+    <span style="font-size:11px;color:var(--ink3)">且</span>
+    <select class="cs" style="width:46px" data-field="op2">
+      <option value="lte"${(s.op2||'lte')==='lte'?' selected':''}>≤</option><option value="lt"${s.op2==='lt'?' selected':''}>＜</option>
+      <option value="gte"${s.op2==='gte'?' selected':''}>≥</option><option value="gt"${s.op2==='gt'?' selected':''}>＞</option>
+    </select>
+    <input class="cn" type="number" placeholder="上限" style="width:66px" data-field="hi" value="${s.hi||''}"/>
+    <span style="font-size:11px;color:var(--ink3);white-space:nowrap">${unitLbl} →</span>
+    <select class="cs" style="width:46px" data-field="opD">
+      <option value="lte"${(s.opD||'lte')==='lte'?' selected':''}>≤</option><option value="lt"${s.opD==='lt'?' selected':''}>＜</option>
+      <option value="gte"${s.opD==='gte'?' selected':''}>≥</option><option value="gt"${s.opD==='gt'?' selected':''}>＞</option>
+    </select>
+    <input class="cn" type="number" placeholder="劑量" style="width:76px" data-field="thD" value="${s.thD||''}"/>
+    <input class="ut" placeholder="mg" style="width:56px" data-field="unit" value="${s.unit||''}"/>
+    <input class="fi" placeholder="說明（選填）" style="flex:1;min-width:80px;font-size:12px;padding:5px 9px" data-field="note" value="${s.note||''}"/>
+    <select class="als ${(s.lv||'soft')==='hard'?'hard':'soft'}" onchange="als(this)" data-field="lv">
+      <option value="soft"${(s.lv||'soft')==='soft'?' selected':''}>⚠️ 警示</option>
+      <option value="hard"${s.lv==='hard'?' selected':''}>🚫 限制</option>
+    </select>
+    <button class="bico" onclick="this.closest('.tier-row').remove()">✕</button>
+  </div>`;
+}
+
+function addRenalGroup(savedGroup){
+  const gid='rg-'+renalGroupIdx++;
+  const basis=savedGroup?.basis||'';
+  const div=document.createElement('div');
+  div.className='rg';div.id=gid;
+  div.innerHTML=`
+    <div class="rg-hdr">
+      <select class="fs" style="width:210px;font-family:var(--mono);font-size:12px;padding:5px 8px" onchange="onRenalBasisChange(this,'${gid}')" data-field="basis">
+        <option value="">— 選擇指標 —</option>
+        <option value="CrCl"${basis==='CrCl'?' selected':''}>CrCl（ml/min）</option>
+        <option value="eGFR"${basis==='eGFR'?' selected':''}>eGFR（ml/min/1.73m²）</option>
+        <option value="SCr"${basis==='SCr'?' selected':''}>SCr（mg/dL）</option>
+        <option value="HD"${basis==='HD'?' selected':''}>HD（血液透析）</option>
+        <option value="PD"${basis==='PD'?' selected':''}>PD（腹膜透析）</option>
+        <option value="CRRT"${basis==='CRRT'?' selected':''}>CRRT（連續性腎臟替代）</option>
+      </select>
+      <select class="fs" style="width:110px;font-size:12px;padding:5px 8px" data-field="doseType">
+        <option value="daily"${(savedGroup?.doseType||'daily')==='daily'?' selected':''}>控管每日劑量</option>
+        <option value="single"${savedGroup?.doseType==='single'?' selected':''}>控管每次劑量</option>
+      </select>
+      <button class="bico" onclick="document.getElementById('${gid}').remove();renderRenalPtFields()">✕ 移除</button>
+    </div>
+    <div id="${gid}-tiers"><div style="font-size:12px;color:var(--ink3);padding:4px 0">請先選擇腎功能指標</div></div>
+    <button class="btn btn-ghost btn-sm mt12" id="${gid}-add-btn" style="display:none" onclick="addRenalTier('${gid}')">＋ 新增區間</button>`;
+  document.getElementById('renal-groups').appendChild(div);
+  // if restoring with basis, populate tiers
+  if(basis){
+    const sel=div.querySelector('[data-field="basis"]');
+    onRenalBasisChange(sel, gid, savedGroup?.tiers);
+  }
+}
+
+function onRenalBasisChange(sel, gid, savedTiers){
+  const basis=sel.value;
+  const tiersEl=document.getElementById(gid+'-tiers');
+  const addBtn=document.getElementById(gid+'-add-btn');
+  tiersEl.innerHTML='';
+  if(!basis){addBtn.style.display='none';tiersEl.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:4px 0">請先選擇腎功能指標</div>';renderRenalPtFields();return;}
+  addBtn.style.display='inline-flex';
+  const isDialysis=['HD','PD','CRRT'].includes(basis);
+  if(savedTiers && savedTiers.length>0){
+    savedTiers.forEach(t=>tiersEl.insertAdjacentHTML('beforeend', makeRenalTierHTML(basis, t)));
+  } else {
+    if(isDialysis){tiersEl.insertAdjacentHTML('beforeend', makeRenalTierHTML(basis));}
+    else{tiersEl.insertAdjacentHTML('beforeend', makeRenalTierHTML(basis));tiersEl.insertAdjacentHTML('beforeend', makeRenalTierHTML(basis));tiersEl.insertAdjacentHTML('beforeend', makeRenalTierHTML(basis));}
+  }
+  renderRenalPtFields();
+}
+
+function addRenalTier(gid){
+  const sel=document.querySelector('#'+gid+' [data-field="basis"]');
+  if(!sel||!sel.value)return;
+  document.getElementById(gid+'-tiers').insertAdjacentHTML('beforeend', makeRenalTierHTML(sel.value));
+}
+
+// ══ Dynamic patient fields ══
+function renderRenalPtFields(){
+  const container=document.getElementById('pt-renal-fields');
+  container.innerHTML='';
+  const seen=new Set();
+  document.querySelectorAll('.rg [data-field="basis"]').forEach(sel=>{
+    const basis=sel.value;
+    if(!basis||seen.has(basis))return;
+    seen.add(basis);
+    const div=document.createElement('div');div.className='fg';
+    if(['HD','PD','CRRT'].includes(basis)){
+      div.innerHTML=`<label class="fl">${basis} 狀態</label>
+        <select class="fs" id="pt-${basis.toLowerCase()}"><option value="yes">是（${basis} 中）</option><option value="no">否</option></select>`;
+    } else {
+      const u=basis==='SCr'?'mg/dL':'ml/min';
+      div.innerHTML=`<label class="fl">${basis}（${u}）</label>
+        <input class="fi" id="pt-${basis.toLowerCase()}" type="number" value="${basis==='SCr'?'1.5':'35'}"/>`;
+    }
+    container.appendChild(div);
+  });
+}
+
+function renderDilFields(){
+  const container=document.getElementById('rx-dil-fields');
+  const anyDil=['dil-ns','dil-d5w','dil-d10w','dil-lr','dil-sw'].some(id=>document.getElementById(id).querySelector('input').checked);
+  const anyBag=['bag-pp','bag-pe','bag-pvc','bag-glass'].some(id=>document.getElementById(id).querySelector('input').checked);
+  if(!anyDil&&!anyBag){container.innerHTML='';return;}
+  const dilOpts=[['NS','dil-ns'],['D5W','dil-d5w'],['D10W','dil-d10w'],['LR','dil-lr'],['SWFI','dil-sw']];
+  let dOpts='<option value="">— 不適用 —</option>';
+  dilOpts.forEach(([v,id])=>dOpts+=`<option${document.getElementById(id).querySelector('input').checked?' style="font-weight:700"':''}>${v}</option>`);
+  let bOpts='<option value="">— 不適用 —</option>';
+  ['PP','PE','PVC','玻璃'].forEach(v=>bOpts+=`<option>${v}</option>`);
+  container.innerHTML=`<div class="pt-g" style="margin-top:10px;margin-bottom:0">
+    <div class="fg"><label class="fl">稀釋液</label><select class="fs" id="rx-dil">${dOpts}</select></div>
+    <div class="fg"><label class="fl">輸液袋材質</label><select class="fs" id="rx-bag">${bOpts}</select></div>
+  </div>`;
+}
+
+// ══ evalCond ══
+function evalCond(v,op,t){
+  if(op==='lte'||op==='≤')return v<=t;if(op==='lt'||op==='<')return v<t;
+  if(op==='gte'||op==='≥')return v>=t;if(op==='gt'||op==='>') return v>t;
+  return true;
+}
+
+// ══ Check RX ══
+function checkRx(){
+  const ptAge=parseInt(document.getElementById('pt-age').value)||0;
+  const ptSex=document.getElementById('pt-sex').value;
+  const ptWt=parseFloat(document.getElementById('pt-wt').value)||60;
+  const ptCP=document.getElementById('pt-cp').value;
+  const ptInd=document.getElementById('pt-ind').value.trim().toLowerCase();
+  const ptDept=document.getElementById('pt-dept').value.trim();
+  const rxSingleRaw=parseFloat(document.getElementById('rx-single').value)||0;
+  const rxFreq=document.getElementById('rx-freq').value;
+  const rxUnitVal=document.getElementById('rx-unit')?.value||'__content__';
+  const rxRoute=document.getElementById('rx-route').value.trim().toUpperCase();
+  const rxDil=document.getElementById('rx-dil')?.value||'';
+  const rxBag=document.getElementById('rx-bag')?.value||'';
+  const freqMult=getFreqMult(rxFreq);
+  // Convert to content unit
+  const conv=rxToContentUnit(rxSingleRaw, rxUnitVal);
+  const rxSingle=conv?.amount??rxSingleRaw;
+  const rxUnit=conv?.contentUnit||getContentUnit();
+  const rxDaily=freqMult!==null ? rxSingle*freqMult : null;
+  const alerts=[];
+
+  // Block 1
+  const maleOk=document.getElementById('opt-male').querySelector('input').checked;
+  const femaleOk=document.getElementById('opt-female').querySelector('input').checked;
+  const noLimitG=document.getElementById('opt-nolimit').querySelector('input').checked;
+  if(!noLimitG){
+    const ok=(ptSex==='男'&&maleOk)||(ptSex==='女'&&femaleOk);
+    if(!ok){const lv=document.getElementById('lv-gender').value;alerts.push({level:lv,title:`性別警訊：${ptSex}性`,desc:'不在允許性別白名單中'});}
+  }
+  const ageMin=parseInt(document.getElementById('age-min').value), ageMax=parseInt(document.getElementById('age-max').value);
+  const ageLv=document.getElementById('lv-age').value;
+  if(!isNaN(ageMin)&&ptAge<ageMin)alerts.push({level:ageLv,title:`年齡警訊：${ptAge} 歲`,desc:`低於允許最小年齡 ${ageMin} 歲`});
+  if(!isNaN(ageMax)&&ptAge>ageMax)alerts.push({level:ageLv,title:`年齡警訊：${ptAge} 歲`,desc:`高於允許最大年齡 ${ageMax} 歲`});
+  const indTags=[...document.querySelectorAll('#ind-tags .tag')].map(t=>t.textContent.replace('×','').trim().toLowerCase());
+  if(indTags.length>0){
+    const ok=indTags.some(i=>ptInd.includes(i)||i.split(' ').some(w=>w.length>2&&ptInd.includes(w)));
+    if(!ok){const lv=document.getElementById('lv-ind').value;alerts.push({level:lv,title:`適應症警訊：「${ptInd||'未填'}」`,desc:`不在白名單中（${indTags.join('、')}）`});}
+  }
+  const deptTags=[...document.querySelectorAll('#dept-tags .tag')].map(t=>t.textContent.replace('×','').trim());
+  if(deptTags.length>0){
+    const ok=deptTags.some(d=>ptDept.includes(d)||d.includes(ptDept));
+    if(!ok){const lv=document.getElementById('lv-dept').value;alerts.push({level:lv,title:`科別警訊：「${ptDept}」`,desc:`不在白名單中（${deptTags.join('、')}）`});}
+  }
+
+  // Block 2
+  const routeTags=[...document.querySelectorAll('#route-tags .wlt')].map(t=>t.textContent.replace('×','').trim().toUpperCase());
+  if(routeTags.length>0&&!routeTags.includes(rxRoute)){
+    const lv=document.getElementById('lv-route').value;
+    alerts.push({level:lv,title:`途徑警訊：「${rxRoute}」`,desc:`不在允許途徑中（${routeTags.join('、')}）`});
+  }
+  const dilLv=document.getElementById('lv-dil').value;
+  const dilMap={'NS':'dil-ns','D5W':'dil-d5w','D10W':'dil-d10w','LR':'dil-lr','SWFI':'dil-sw'};
+  const bagMap={'PP':'bag-pp','PE':'bag-pe','PVC':'bag-pvc','玻璃':'bag-glass'};
+  const anyDilSet=['dil-ns','dil-d5w','dil-d10w','dil-lr','dil-sw'].some(id=>document.getElementById(id).querySelector('input').checked);
+  const anyBagSet=['bag-pp','bag-pe','bag-pvc','bag-glass'].some(id=>document.getElementById(id).querySelector('input').checked);
+  if(anyDilSet&&rxDil&&dilMap[rxDil]&&!document.getElementById(dilMap[rxDil]).querySelector('input').checked)
+    alerts.push({level:dilLv,title:`稀釋液警訊：${rxDil}`,desc:'不在允許稀釋液白名單中'});
+  if(anyBagSet&&rxBag&&bagMap[rxBag]&&!document.getElementById(bagMap[rxBag]).querySelector('input').checked)
+    alerts.push({level:dilLv,title:`輸液袋警訊：${rxBag}`,desc:'不在允許輸液袋材質白名單中'});
+
+  // Block 3: freq
+  const freqTags=[...document.querySelectorAll('#freq-tags .tag')].map(t=>t.dataset.freq||t.textContent.split('（')[0].trim());
+  if(freqTags.length>0&&!freqTags.includes(rxFreq)){
+    const lv=document.getElementById('lv-freq').value;
+    alerts.push({level:lv,title:`頻次警訊：${rxFreq}`,desc:`不在允許頻次白名單中（${freqTags.join('、')}）`});
+  }
+
+  // Block 3: dose conditions
+  const OPS={lte:'≤',lt:'<',gte:'≥',gt:'>'};
+  document.querySelectorAll('[data-dc]').forEach(card=>{
+    const g=f=>card.querySelector(`[data-field="${f}"]`);
+    const type=g('type')?.value||'daily';
+    const lv=g('level')?.value||'hard';
+    const ageMinR=parseFloat(g('ageMin')?.value), ageMaxR=parseFloat(g('ageMax')?.value);
+    const wtMinR=parseFloat(g('wtMin')?.value), wtMaxR=parseFloat(g('wtMax')?.value);
+    const op=g('op')?.value||'lte';
+    const th=parseFloat(g('threshold')?.value);
+    const unit=g('unit')?.value||rxUnit;
+    const perKg=g('perKg')?.checked||false;
+    if(isNaN(th))return;
+    // age/weight range gate
+    if(!isNaN(ageMinR)&&ptAge<ageMinR)return;
+    if(!isNaN(ageMaxR)&&ptAge>ageMaxR)return;
+    if(!isNaN(wtMinR)&&ptWt<wtMinR)return;
+    if(!isNaN(wtMaxR)&&ptWt>wtMaxR)return;
+    let rxVal;
+    if(type==='single'||type==='max_single'){rxVal=rxSingle;}
+    else{
+      if(rxDaily===null){
+        // special freq: only check single dose for daily type
+        rxVal=rxSingle;
+      } else {rxVal=rxDaily;}
+    }
+    if(perKg)rxVal=rxVal/ptWt;
+    // 將閾值換算至 content unit 後再比較
+    const cu=getContentUnit();
+    const thCU=convertUnit(th,unit,cu);
+    const thCmp=thCU!==null?thCU:th;
+    if(rxVal>0&&!evalCond(rxVal,op,thCmp)){
+      const sym=OPS[op]||op;const uStr=unit+(perKg?'/kg':'');
+      const typeStr={daily:'每日劑量',single:'每次劑量',max_single:'單次最大劑量'}[type]||type;
+      alerts.push({level:lv,title:`${typeStr}警訊：${rxVal.toFixed(1)} ${cu+(perKg?'/kg':'')}`,desc:`不符合白名單條件（允許：${typeStr} ${sym} ${th} ${uStr}）`});
+    }
+  });
+
+  // Block 3: renal — doseType read from group header (applies to all tiers in that group)
+  document.querySelectorAll('.rg').forEach(g=>{
+    const basisSel=g.querySelector('[data-field="basis"]');
+    const basis=basisSel?.value;if(!basis)return;
+    const groupDoseType=g.querySelector('[data-field="doseType"]')?.value||'daily';
+    const isDialysis=['HD','PD','CRRT'].includes(basis);
+    const ptId='pt-'+basis.toLowerCase();
+    const ptEl=document.getElementById(ptId);if(!ptEl)return;
+    const rxValForGroup=groupDoseType==='single'?rxSingle:(rxDaily??rxSingle);
+    const doseTypeLabel=groupDoseType==='single'?'每次':'每日';
+    if(isDialysis){
+      if(ptEl.value!=='yes')return;
+      g.querySelectorAll('[data-dialysis]').forEach(row=>{
+        const op=row.querySelector('[data-field="op"]')?.value||'lte';
+        const val=parseFloat(row.querySelector('[data-field="val"]')?.value);
+        const unitD=row.querySelector('[data-field="unit"]')?.value||'';
+        const lv=row.querySelector('[data-field="lv"]')?.value||'soft';
+        if(isNaN(val))return;
+        const cuD=getContentUnit();
+        const valCU=unitD?convertUnit(val,unitD,cuD):null;
+        const valCmp=valCU!==null?valCU:val;
+        if(!evalCond(rxValForGroup,op,valCmp)){
+          const sym=OPS[op]||op;
+          alerts.push({level:lv,title:`${basis} 病人劑量警訊`,desc:`${doseTypeLabel}劑量 ${rxValForGroup.toFixed(1)} ${cuD} 不符合條件（允許 ${sym} ${val} ${unitD||cuD}）`});
+        }
+      });
+    } else {
+      const ptVal=parseFloat(ptEl.value);if(isNaN(ptVal))return;
+      g.querySelectorAll('[data-renal-range]').forEach(row=>{
+        const op1=row.querySelector('[data-field="op1"]')?.value||'gte';
+        const lo=parseFloat(row.querySelector('[data-field="lo"]')?.value);
+        const op2=row.querySelector('[data-field="op2"]')?.value||'lte';
+        const hi=parseFloat(row.querySelector('[data-field="hi"]')?.value);
+        const opD=row.querySelector('[data-field="opD"]')?.value||'lte';
+        const thD=parseFloat(row.querySelector('[data-field="thD"]')?.value);
+        const lv=row.querySelector('[data-field="lv"]')?.value||'soft';
+        if(isNaN(lo)||isNaN(hi)||isNaN(thD))return;
+        if(!evalCond(ptVal,op1,lo)||!evalCond(ptVal,op2,hi))return;
+        const unitR=row.querySelector('[data-field="unit"]')?.value||'';
+        const cuR=getContentUnit();
+        const thRCU=unitR?convertUnit(thD,unitR,cuR):null;
+        const thRCmp=thRCU!==null?thRCU:thD;
+        if(!evalCond(rxValForGroup,opD,thRCmp)){
+          const sym=OPS[opD]||opD;
+          alerts.push({level:lv,title:`腎功能劑量警訊（${basis} ${ptVal}）`,desc:`${doseTypeLabel}劑量 ${rxValForGroup.toFixed(1)} ${cuR} 不符合（允許 ${sym} ${thD} ${unitR||cuR}）`});
+        }
+      });
+    }
+  });
+
+  // Block 3: hepatic
+  if(ptCP){
+    const idx={A:0,B:1,C:2}[ptCP];
+    const rows=document.querySelectorAll('#hep-tiers .tier-row');
+    if(idx!==undefined&&rows[idx]){
+      const row=rows[idx];
+      const doseType=row.querySelector('.fs')?.value||'daily';
+      const op=row.querySelector('.cs')?.value||'lte';
+      const th=parseFloat(row.querySelector('.cn')?.value);
+      const unitH=row.querySelector('.ut')?.value||'';
+      const lv=row.querySelector('.als')?.value||'soft';
+      if(!isNaN(th)){
+        const rxVal=doseType==='single'?rxSingle:(rxDaily??rxSingle);
+        const cuH=getContentUnit();
+        const thHCU=unitH?convertUnit(th,unitH,cuH):null;
+        const thHCmp=thHCU!==null?thHCU:th;
+        if(!evalCond(rxVal,op,thHCmp)){
+          const sym=OPS[op]||op;
+          alerts.push({level:lv,title:`肝功能劑量警訊（Child-Pugh ${ptCP}）`,desc:`${doseType==='single'?'每次':'每日'}劑量 ${rxVal.toFixed(1)} ${cuH} 不符合條件（允許 ${sym} ${th} ${unitH||cuH}）`});
+        }
+      }
+    }
+  }
+
+  showPopup(alerts);
+}
+
+function showPopup(alerts){
+  const list=document.getElementById('alist'),hint=document.getElementById('phint');
+  list.innerHTML='';
+  if(alerts.length===0){
+    list.innerHTML=`<div class="ai none"><span class="ai-ico">✅</span><div class="ai-ct"><strong>無警訊觸發</strong><small>符合你設定的所有白名單條件</small></div></div>`;
+    hint.textContent='試試修改病人資料或處方，觀察什麼情況會觸發警訊。';
+  } else {
+    const h=alerts.filter(a=>a.level==='hard').length, s=alerts.filter(a=>a.level==='soft').length;
+    alerts.forEach(a=>{
+      const d=document.createElement('div');d.className='ai '+(a.level||'soft');
+      d.innerHTML=`<span class="ai-ico">${a.level==='hard'?'🚫':'⚠️'}</span><div class="ai-ct"><strong>${a.title}</strong><small>${a.desc}</small></div>`;
+      list.appendChild(d);
+    });
+    hint.innerHTML=`共觸發 <strong>${alerts.length}</strong> 個警訊（${h} 個限制、${s} 個警示）。<br>這個結果是你預期的嗎？若不是，可能是條件式方向設錯了。`;
+  }
+  document.getElementById('overlay').classList.add('show');
+}
+function closePopup(){document.getElementById('overlay').classList.remove('show');}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))closePopup();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePopup();});
+
+// ══ Collect all data ══
+function collectData(){
+  // dose conds
+  const doseConds=[];
+  document.querySelectorAll('[data-dc]').forEach(card=>{
+    const g=f=>card.querySelector(`[data-field="${f}"]`);
+    doseConds.push({
+      type:g('type')?.value||'daily', level:g('level')?.value||'hard',
+      ageMin:g('ageMin')?.value||'', ageMax:g('ageMax')?.value||'',
+      wtMin:g('wtMin')?.value||'', wtMax:g('wtMax')?.value||'',
+      op:g('op')?.value||'lte', threshold:g('threshold')?.value||'',
+      unit:g('unit')?.value||'', perKg:g('perKg')?.checked||false
+    });
+  });
+  // renal groups — doseType saved at group level
+  const renalGroups=[];
+  document.querySelectorAll('.rg').forEach(g=>{
+    const basis=g.querySelector('[data-field="basis"]')?.value||'';
+    if(!basis)return;
+    const doseType=g.querySelector('[data-field="doseType"]')?.value||'daily';
+    const isDialysis=['HD','PD','CRRT'].includes(basis);
+    const tiers=[];
+    g.querySelectorAll('.tier-row').forEach(row=>{
+      const rf=f=>row.querySelector(`[data-field="${f}"]`);
+      if(isDialysis){
+        tiers.push({op:rf('op')?.value||'lte',val:rf('val')?.value||'',unit:rf('unit')?.value||'',note:rf('note')?.value||'',lv:rf('lv')?.value||'soft'});
+      } else {
+        tiers.push({op1:rf('op1')?.value||'gte',lo:rf('lo')?.value||'',op2:rf('op2')?.value||'lte',hi:rf('hi')?.value||'',opD:rf('opD')?.value||'lte',thD:rf('thD')?.value||'',unit:rf('unit')?.value||'',note:rf('note')?.value||'',lv:rf('lv')?.value||'soft'});
+      }
+    });
+    renalGroups.push({basis,doseType,tiers});
+  });
+  // hep
+  const hepatic=[];
+  document.querySelectorAll('#hep-tiers .tier-row').forEach(row=>{
+    const doseType=row.querySelector('.fs')?.value||'daily';
+    const op=row.querySelector('.cs')?.value||'lte';
+    const val=row.querySelector('.cn')?.value||'';
+    const unit=row.querySelector('.ut')?.value||'';
+    const note=row.querySelectorAll('.fi')[0]?.value||'';
+    const lv=row.querySelector('.als')?.value||'soft';
+    hepatic.push({doseType,op,val,unit,note,lv});
+  });
+  // freq tags
+  const freqTags=[...document.querySelectorAll('#freq-tags .tag')].map(t=>({freq:t.dataset.freq||'',label:t.textContent.replace('×','').trim()}));
+  return {
+    meta:{studentName,drugName,savedAt:new Date().toISOString()},
+    drugSpec:{
+      contentUnit:document.getElementById('drug-content-unit')?.value||'mg',
+      customUnit:document.getElementById('drug-custom-unit')?.value||'',
+      valence:document.getElementById('drug-valence')?.value||'',
+      specs:getSpecs()
+    },
+    block1:{
+      gender:{male:document.getElementById('opt-male').querySelector('input').checked,female:document.getElementById('opt-female').querySelector('input').checked,noLimit:document.getElementById('opt-nolimit').querySelector('input').checked,level:document.getElementById('lv-gender').value},
+      age:{min:document.getElementById('age-min').value,max:document.getElementById('age-max').value,level:document.getElementById('lv-age').value},
+      indications:[...document.querySelectorAll('#ind-tags .tag')].map(t=>t.textContent.replace('×','').trim()),
+      indicationLevel:document.getElementById('lv-ind').value,
+      depts:[...document.querySelectorAll('#dept-tags .tag')].map(t=>t.textContent.replace('×','').trim()),
+      deptLevel:document.getElementById('lv-dept').value
+    },
+    block2:{
+      routes:[...document.querySelectorAll('#route-tags .wlt')].map(t=>t.textContent.replace('×','').trim()),
+      routeLevel:document.getElementById('lv-route').value,
+      diluents:{ns:document.getElementById('dil-ns').querySelector('input').checked,d5w:document.getElementById('dil-d5w').querySelector('input').checked,d10w:document.getElementById('dil-d10w').querySelector('input').checked,lr:document.getElementById('dil-lr').querySelector('input').checked,sw:document.getElementById('dil-sw').querySelector('input').checked},
+      bags:{pp:document.getElementById('bag-pp').querySelector('input').checked,pe:document.getElementById('bag-pe').querySelector('input').checked,pvc:document.getElementById('bag-pvc').querySelector('input').checked,glass:document.getElementById('bag-glass').querySelector('input').checked},
+      diluentLevel:document.getElementById('lv-dil').value
+    },
+    block3:{doseConds,renalGroups,hepatic,freqTags,freqLevel:document.getElementById('lv-freq').value}
+  };
+}
+
+// ══ Restore all data ══
+function restoreData(data){
+  // Drug spec
+  const ds=data.drugSpec||{};
+  if(ds.contentUnit){
+    const cuSel=document.getElementById('drug-content-unit');
+    if(cuSel){cuSel.value=ds.contentUnit;onDrugUnitChange();}
+  }
+  if(ds.customUnit)document.getElementById('drug-custom-unit').value=ds.customUnit;
+  if(ds.valence)document.getElementById('drug-valence').value=ds.valence;
+  if(ds.specs&&ds.specs.length>0){
+    document.getElementById('drug-specs').innerHTML='';specIdx=0;
+    ds.specs.forEach(s=>addDrugSpec(s));
+  }
+  updateRxUnitSelector();
+
+  const b1=data.block1||{};
+  if(b1.gender){setChk('opt-male',b1.gender.male);setChk('opt-female',b1.gender.female);setChk('opt-nolimit',b1.gender.noLimit);setAlsVal('lv-gender',b1.gender.level);}
+  if(b1.age){document.getElementById('age-min').value=b1.age.min||'';document.getElementById('age-max').value=b1.age.max||'';setAlsVal('lv-age',b1.age.level);}
+  if(b1.indications)b1.indications.forEach(v=>{document.getElementById('ind-in').value=v;addTag('ind-in','ind-tags');});
+  setAlsVal('lv-ind',b1.indicationLevel);
+  if(b1.depts)b1.depts.forEach(v=>{document.getElementById('dept-in').value=v;addTag('dept-in','dept-tags');});
+  setAlsVal('lv-dept',b1.deptLevel);
+
+  const b2=data.block2||{};
+  // clear default route tag
+  document.getElementById('route-tags').innerHTML='';
+  if(b2.routes)b2.routes.forEach(v=>{document.getElementById('route-in').value=v;addWlt('route-in','route-tags');});
+  setAlsVal('lv-route',b2.routeLevel);
+  if(b2.diluents){const dm={ns:'dil-ns',d5w:'dil-d5w',d10w:'dil-d10w',lr:'dil-lr',sw:'dil-sw'};Object.entries(dm).forEach(([k,id])=>{if(b2.diluents[k]!==undefined)setChk(id,b2.diluents[k]);});}
+  if(b2.bags){const bm={pp:'bag-pp',pe:'bag-pe',pvc:'bag-pvc',glass:'bag-glass'};Object.entries(bm).forEach(([k,id])=>{if(b2.bags[k]!==undefined)setChk(id,b2.bags[k]);});}
+  setAlsVal('lv-dil',b2.diluentLevel);
+
+  const b3=data.block3||{};
+  // dose conds
+  document.getElementById('dose-conds').innerHTML='';
+  if(b3.doseConds&&b3.doseConds.length>0)b3.doseConds.forEach(s=>addDoseCond(s));
+  else addDoseCond();
+  // renal groups
+  document.getElementById('renal-groups').innerHTML='';renalGroupIdx=0;
+  if(b3.renalGroups)b3.renalGroups.forEach(sg=>addRenalGroup(sg));
+  // hepatic
+  if(b3.hepatic){
+    const rows=document.querySelectorAll('#hep-tiers .tier-row');
+    b3.hepatic.forEach((h,i)=>{
+      if(!rows[i])return;
+      const row=rows[i];
+      const dtSel=row.querySelector('.fs');if(dtSel&&h.doseType)dtSel.value=h.doseType;
+      const opSel=row.querySelector('.cs');if(opSel&&h.op)opSel.value=h.op;
+      const numEl=row.querySelector('.cn');if(numEl&&h.val)numEl.value=h.val;
+      const unitEl=row.querySelector('.ut');if(unitEl&&h.unit)unitEl.value=h.unit;
+      const noteEl=row.querySelector('.fi');if(noteEl&&h.note)noteEl.value=h.note;
+      const lvEl=row.querySelector('.als');if(lvEl&&h.lv){lvEl.value=h.lv;als(lvEl);}
+    });
+  }
+  // freq
+  if(b3.freqTags)b3.freqTags.forEach(ft=>{
+    const d=document.createElement('div');d.className='tag';d.dataset.freq=ft.freq;
+    d.innerHTML=`${ft.label} <span class="tr" onclick="this.closest('.tag').remove()">×</span>`;
+    document.getElementById('freq-tags').appendChild(d);
+  });
+  setAlsVal('lv-freq',b3.freqLevel);
+}
+
+function setChk(id,val){const el=document.getElementById(id);if(!el)return;const cb=el.querySelector('input');if(cb){cb.checked=!!val;el.classList.toggle('on',!!val);}}
+function setAlsVal(id,val){const el=document.getElementById(id);if(!el||!val)return;el.value=val;als(el);}
+
+// ══ Save / Submit ══
+async function autoSave(showBadge=false){
+  if(!studentName)return;
+  const data=JSON.stringify(collectData(),null,2);
+  let savedToFile=false;
+
+  // 嘗試寫入已授權的檔案
+  if(fileHandle){
+    try{
+      const w=await fileHandle.createWritable();
+      await w.write(data); await w.close();
+      savedToFile=true;
+    }catch(e){ fileHandle=null; } // 授權失效，重置
+  }
+
+  // 永遠同時存 localStorage 作備援
+  try{
+    localStorage.setItem(getStorageKey(),data);
+  }catch(e){
+    if(!savedToFile) alert('⚠️ 暫存失敗（瀏覽器儲存空間不足），請立即點「提交作業」匯出 JSON 保存進度。');
+  }
+
+  if(showBadge){
+    const b=document.getElementById('saved-badge');
+    b.textContent=savedToFile?'✓ 已存至檔案':'✓ 已暫存';
+    b.style.display='inline-flex';
+    setTimeout(()=>b.style.display='none',2500);
+  }
+}
+
+// 手動存：第一次詢問是否使用 File System Access API
+async function manualSave(){
+  if('showSaveFilePicker' in window && !fileHandle && !filePickerOffered){
+    filePickerOffered=true;
+    try{
+      fileHandle=await window.showSaveFilePicker({
+        suggestedName:`PharmAlert_${drugName}_${studentName}_draft.json`,
+        types:[{description:'JSON 作業草稿',accept:{'application/json':['.json']}}]
+      });
+      document.getElementById('btn-save').textContent='💾 暫存（檔案）';
+    }catch(e){ if(e.name!=='AbortError') console.warn(e); }
+  }
+  autoSave(true);
+}
+
+setInterval(()=>{if(studentName)autoSave();},30000);
+
+function submitWork(){
+  if(!confirm('確認提交作業？系統將匯出 JSON 作業檔。'))return;
+  const data=collectData();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`PharmAlert_${drugName}_${studentName}_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.json`;
+  a.click();
+}
+
+function loadFile(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      studentName=data.meta?.studentName||'—';
+      drugName=data.meta?.drugName||'—';
+      enterApp();
+      restoreData(data);
+      alert(`✓ 作業載入成功！\n學生：${studentName}\n藥品：${drugName}`);
+    }catch(err){alert('載入失敗，請確認檔案格式。');}
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
