@@ -775,7 +775,7 @@ function addFreqTag(){
   const sel=document.getElementById('freq-sel'),v=sel.value;if(!v)return;
   const label=sel.options[sel.selectedIndex].text;
   const d=document.createElement('div');d.className='tag';
-  d.dataset.freq=v;
+  d.dataset.freq=v.split('（')[0].trim();
   d.innerHTML=`${label} <span class="tr" onclick="this.closest('.tag').remove()">×</span>`;
   document.getElementById('freq-tags').appendChild(d);
   sel.value='';
@@ -1080,10 +1080,10 @@ function checkRx(){
     alerts.push({level:dilLv,title:`輸液袋警訊：${rxBag}`,desc:'不在允許輸液袋材質白名單中'});
 
   // Block 3: freq
-  const freqTags=[...document.querySelectorAll('#freq-tags .tag')].map(t=>t.dataset.freq||t.textContent.split('（')[0].trim());
-  if(freqTags.length>0&&!freqTags.includes(rxFreq)){
+  const freqItems=[...document.querySelectorAll('#freq-tags .tag')].map(t=>({code:t.dataset.freq,label:t.textContent.replace('×','').trim()}));
+  if(freqItems.length>0&&!freqItems.some(f=>f.code===rxFreq)){
     const lv=document.getElementById('lv-freq').value;
-    alerts.push({level:lv,title:`頻次警訊：${rxFreq}`,desc:`不在允許頻次白名單中（${freqTags.join('、')}）`});
+    alerts.push({level:lv,title:`頻次警訊：${rxFreq}`,desc:`不在允許頻次白名單中（${freqItems.map(f=>f.label).join('、')}）`});
   }
 
   // Block 3: dose conditions
