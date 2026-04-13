@@ -1378,8 +1378,7 @@ function checkRx(){
     if(!cumN||isNaN(th)||freqMult===null)return;
     const cumDose=rxSingle*freqMult*cumN;
     const cu=getContentUnit();
-    const thCU=unit?convertUnit(th,unit,cu):null;
-    const thCmp=thCU!==null?thCU:th;
+    const thCmp=unit?(rxToContentUnit(th,unit)?.amount??th):th;
     if(!evalCond(cumDose,op,thCmp)){
       const sym=OPS[op]||op;
       alerts.push({level:lv,title:`累積劑量警訊：${cumDose.toFixed(2)} ${cu}（每${cumN}天）`,desc:`不符合條件（允許：每${cumN}天累積 ${sym} ${th} ${unit||cu}）`});
@@ -1414,8 +1413,7 @@ function checkRx(){
         if(cumN&&!isNaN(cumTh)&&freqMult!==null){
           const cu=getContentUnit();
           const cumDose=rxSingle*freqMult*cumN;
-          const thCU=cumUnit?convertUnit(cumTh,cumUnit,cu):null;
-          const thCmp=thCU!==null?thCU:cumTh;
+          const thCmp=cumUnit?(rxToContentUnit(cumTh,cumUnit)?.amount??cumTh):cumTh;
           violated=!evalCond(cumDose,cumOp,thCmp);
           desc=`每${cumN}天累積劑量 ${SYM[cumOp]||cumOp} ${cumTh} ${cumUnit||cu}`;
         }
