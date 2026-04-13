@@ -162,7 +162,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:#f7f5f0;color:#1c1a17;min-
 /* Saved badge */
 .saved-badge{font-size:11px;color:var(--green);font-family:var(--mono);padding:4px 8px;background:var(--gbg);border:1px solid #b8ddc8;border-radius:var(--r);display:none;}
 /* Utils */
-.flex{display:flex;}.gap8{gap:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+.flex{display:flex;}.gap8{gap:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}.mt8{margin-top:8px;}
+/* Combo rule */
+.combo-cond-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 10px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px;}
+.combo-cond-row select,.combo-cond-row input{padding:5px 6px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;font-family:inherit;background:#f7f5f0;color:var(--ink);}
+.combo-cond-row select:focus,.combo-cond-row input:focus{outline:none;border-color:var(--green);}
+.combo-logic-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.08em;background:var(--paper2);border:1px solid var(--border);color:var(--ink3);margin:2px auto;width:fit-content;}
 </style>
 </head>
 <body>
@@ -428,6 +433,43 @@ body{font-family:'Noto Sans TC',sans-serif;background:#f7f5f0;color:#1c1a17;min-
         </div>
       </div>
 
+      <!-- 每N天累積劑量條件 -->
+      <div class="card">
+        <div class="ch"><div class="ct">📦 累積劑量條件（選填）</div></div>
+        <div class="cb">
+          <div class="note blue">設定每 N 天的累積劑量限制（白名單邏輯）。系統依開立天數與頻次自動計算累積量驗證。特殊頻次（PRN/QOD 等）不適用。</div>
+          <div id="cum-conds"></div>
+          <button class="btn btn-ghost btn-sm mt12" onclick="addCumCond()">＋ 新增累積劑量條件</button>
+        </div>
+      </div>
+
+      <!-- 開立天數條件 -->
+      <div class="card">
+        <div class="ch">
+          <div class="ct">📅 開立天數限制（選填）</div>
+          <select class="als soft" id="lv-days" onchange="als(this)"><option value="soft">⚠️ 警示</option><option value="hard">🚫 限制</option></select>
+        </div>
+        <div class="cb">
+          <div class="note blue">限制單次處方的開立天數。留空表示不限制。</div>
+          <div class="dc-row">
+            <span class="dc-rl">開立天數</span>
+            <select class="cs" id="days-op"><option value="lte">≤</option><option value="lt">&lt;</option><option value="gte">≥</option><option value="gt">&gt;</option></select>
+            <input class="cn" id="days-th" type="number" placeholder="天數">
+            <span style="font-size:13px;color:var(--ink2);padding:0 4px">天</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 組合警訊 -->
+      <div class="card">
+        <div class="ch"><div class="ct">🔗 組合警訊（選填）</div></div>
+        <div class="cb">
+          <div class="note blue">用布林邏輯組合多個條件。<strong>OR</strong>：任一子條件違反即觸發；<strong>AND</strong>：全部子條件皆違反才觸發。</div>
+          <div id="combo-rules"></div>
+          <button class="btn btn-ghost btn-sm mt12" onclick="addComboRule()">＋ 新增組合規則</button>
+        </div>
+      </div>
+
       <!-- 腎功能 -->
       <div class="card">
         <div class="ch"><div class="ct">🫘 腎功能劑量限制</div></div>
@@ -537,6 +579,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#f7f5f0;color:#1c1a17;min-
                 </optgroup>
               </select>
             </div>
+            <div class="fg"><label class="fl">開立天數（天）</label><input class="fi" id="rx-days" type="number" value="7" oninput="calcDaily()"/></div>
             <div class="fg"><label class="fl">給藥途徑</label><input class="fi" id="rx-route" value="IV"/></div>
           </div>
           <div class="daily-calc" id="daily-calc"></div>
@@ -781,6 +824,114 @@ function addFreqTag(){
   sel.value='';
 }
 
+// ══ Cumulative dose conditions ══
+let cumCondIdx=0;
+function makeCumCondHTML(id,saved){
+  const s=saved||{};
+  const lv=s.level||'soft';
+  return `<div class="dc-card" id="${id}" data-cumcond>
+    <div class="dc-hdr">
+      <span style="font-size:12px;color:var(--ink3);font-family:var(--mono);white-space:nowrap">每</span>
+      <input class="cn" type="number" data-field="cumN" value="${s.cumN||7}" style="width:52px" placeholder="天">
+      <span style="font-size:12px;color:var(--ink3);white-space:nowrap">天累積劑量</span>
+      <select class="als ${lv==='hard'?'hard':'soft'}" onchange="als(this)" data-field="level">
+        <option value="soft"${lv==='soft'?' selected':''}>⚠️ 警示</option>
+        <option value="hard"${lv==='hard'?' selected':''}>🚫 限制</option>
+      </select>
+      <button class="bico" onclick="this.closest('[data-cumcond]').remove()" title="刪除">🗑</button>
+    </div>
+    <div class="dc-row">
+      <span class="dc-rl">閾值</span>
+      <select class="cs" data-field="op">
+        <option value="lte"${(!s.op||s.op==='lte')?' selected':''}>≤</option>
+        <option value="lt"${s.op==='lt'?' selected':''}>&lt;</option>
+        <option value="gte"${s.op==='gte'?' selected':''}>≥</option>
+        <option value="gt"${s.op==='gt'?' selected':''}>></option>
+      </select>
+      <input class="cn" type="number" data-field="threshold" value="${s.threshold||''}" placeholder="劑量">
+      <input class="ut" data-field="unit" value="${s.unit||''}" placeholder="mg">
+    </div>
+  </div>`;
+}
+function addCumCond(saved){
+  const id='cc-'+(++cumCondIdx);
+  document.getElementById('cum-conds').insertAdjacentHTML('beforeend',makeCumCondHTML(id,saved));
+}
+
+// ══ Combo rules ══
+let comboRuleIdx=0;
+function makeComboCondHTML(saved){
+  const s=saved||{};
+  const type=s.type||'cumDose';
+  const isCum=type==='cumDose';
+  return `<div class="combo-cond-row" data-combo-cond>
+    <select data-field="type" onchange="swapComboType(this)" style="min-width:120px">
+      <option value="cumDose"${isCum?' selected':''}>每N天累積劑量</option>
+      <option value="prescDays"${!isCum?' selected':''}>開立天數</option>
+    </select>
+    <span data-combo-cum ${!isCum?'style="display:none"':''}style="display:contents">
+      每 <input type="number" data-field="cumN" value="${s.cumN||7}" style="width:44px"> 天
+      <select class="cs" data-field="cumOp">
+        <option value="gte"${(!s.cumOp||s.cumOp==='gte')?' selected':''}>≥</option>
+        <option value="gt"${s.cumOp==='gt'?' selected':''}>></option>
+        <option value="lte"${s.cumOp==='lte'?' selected':''}>≤</option>
+        <option value="lt"${s.cumOp==='lt'?' selected':''}>&lt;</option>
+      </select>
+      <input type="number" data-field="cumTh" value="${s.cumTh||''}" placeholder="劑量" style="width:65px">
+      <input data-field="cumUnit" value="${s.cumUnit||''}" placeholder="mg" style="width:52px">
+    </span>
+    <span data-combo-pd ${isCum?'style="display:none"':''}style="display:contents">
+      開立天數
+      <select class="cs" data-field="pdOp">
+        <option value="lte"${(!s.pdOp||s.pdOp==='lte')?' selected':''}>≤</option>
+        <option value="lt"${s.pdOp==='lt'?' selected':''}>&lt;</option>
+        <option value="gte"${s.pdOp==='gte'?' selected':''}>≥</option>
+        <option value="gt"${s.pdOp==='gt'?' selected':''}>></option>
+      </select>
+      <input type="number" data-field="pdTh" value="${s.pdTh||''}" placeholder="天" style="width:55px"> 天
+    </span>
+    <button class="bico" onclick="this.closest('[data-combo-cond]').remove()">×</button>
+  </div>`;
+}
+function swapComboType(sel){
+  const row=sel.closest('[data-combo-cond]');
+  const isCum=sel.value==='cumDose';
+  row.querySelector('[data-combo-cum]').style.display=isCum?'contents':'none';
+  row.querySelector('[data-combo-pd]').style.display=isCum?'none':'contents';
+}
+function addComboCond(condsEl,saved){
+  condsEl.insertAdjacentHTML('beforeend',makeComboCondHTML(saved));
+}
+function makeComboRuleHTML(id,saved){
+  const s=saved||{};
+  const logic=s.logic||'OR';
+  const lv=s.level||'hard';
+  return `<div class="dc-card" id="${id}" data-comborule>
+    <div class="dc-hdr">
+      <span style="font-size:11px;color:var(--ink3);font-family:var(--mono)">邏輯</span>
+      <select class="fs" data-field="logic" style="width:130px;font-size:12px;padding:5px 8px">
+        <option value="OR"${logic==='OR'?' selected':''}>OR（任一條件）</option>
+        <option value="AND"${logic==='AND'?' selected':''}>AND（全部條件）</option>
+      </select>
+      <select class="als ${lv==='hard'?'hard':'soft'}" onchange="als(this)" data-field="level">
+        <option value="hard"${lv==='hard'?' selected':''}>🚫 限制</option>
+        <option value="soft"${lv==='soft'?' selected':''}>⚠️ 警示</option>
+      </select>
+      <button class="bico" onclick="this.closest('[data-comborule]').remove()" title="刪除">🗑</button>
+    </div>
+    <div data-combo-conds></div>
+    <button class="btn btn-ghost btn-sm mt8" onclick="addComboCond(this.previousElementSibling)">＋ 新增子條件</button>
+  </div>`;
+}
+function addComboRule(saved){
+  const id='cr-'+(++comboRuleIdx);
+  document.getElementById('combo-rules').insertAdjacentHTML('beforeend',makeComboRuleHTML(id,saved));
+  if(saved&&saved.conds){
+    const condsEl=document.getElementById(id).querySelector('[data-combo-conds]');
+    saved.conds.forEach(c=>addComboCond(condsEl,c));
+  }
+}
+
 // ══ Frequency → daily multiplier ══
 function getFreqMult(freq){return FREQ_MULTIPLIER[freq]??null;}
 
@@ -807,6 +958,23 @@ function calcDaily(){
   } else if(single>0){
     const daily=(singleInCU*mult);
     lines.push(`每日劑量：${singleInCU.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit} × ${mult} = ${daily.toFixed(3).replace(/\.?0+$/,'')} ${displayUnit}/day`);
+  }
+  // Feature 1: ceiling total quantity in spec units
+  const rxDays=parseInt(document.getElementById('rx-days')?.value)||0;
+  if(rxDays>0&&single>0&&mult!==null){
+    const totalInCU=singleInCU*mult*rxDays;
+    const specs=getSpecs();
+    if(specs.length>0){
+      specs.forEach(sp=>{
+        if(sp.specAmt>0){
+          const totalInSpec=totalInCU/sp.specAmt;
+          const ceiling=Math.ceil(totalInSpec);
+          lines.push(`↗ 進位總量（${rxDays}天）：${totalInSpec.toFixed(2)} ${sp.specUnit} → <strong>${ceiling} ${sp.specUnit}</strong>`);
+        }
+      });
+    } else {
+      lines.push(`療程總量（${rxDays}天）：${(singleInCU*mult*rxDays).toFixed(2)} ${displayUnit}`);
+    }
   }
   if(lines.length>0){el.style.display='block';el.innerHTML=lines.join('<br>');}
   else{el.style.display='none';}
@@ -1198,6 +1366,78 @@ function checkRx(){
     }
   }
 
+  // Feature 2: cumulative dose conditions
+  const rxDays=parseInt(document.getElementById('rx-days')?.value)||0;
+  document.querySelectorAll('[data-cumcond]').forEach(card=>{
+    const g=f=>card.querySelector(`[data-field="${f}"]`);
+    const cumN=parseFloat(g('cumN')?.value)||0;
+    const op=g('op')?.value||'lte';
+    const th=parseFloat(g('threshold')?.value);
+    const unit=g('unit')?.value||'';
+    const lv=g('level')?.value||'soft';
+    if(!cumN||isNaN(th)||freqMult===null)return;
+    const cumDose=rxSingle*freqMult*cumN;
+    const cu=getContentUnit();
+    const thCU=unit?convertUnit(th,unit,cu):null;
+    const thCmp=thCU!==null?thCU:th;
+    if(!evalCond(cumDose,op,thCmp)){
+      const sym=OPS[op]||op;
+      alerts.push({level:lv,title:`累積劑量警訊：${cumDose.toFixed(2)} ${cu}（每${cumN}天）`,desc:`不符合條件（允許：每${cumN}天累積 ${sym} ${th} ${unit||cu}）`});
+    }
+  });
+
+  // Feature 3: prescription days
+  const daysOp=document.getElementById('days-op')?.value||'lte';
+  const daysTh=parseFloat(document.getElementById('days-th')?.value);
+  if(!isNaN(daysTh)&&rxDays>0){
+    const daysLv=document.getElementById('lv-days').value;
+    if(!evalCond(rxDays,daysOp,daysTh)){
+      const sym=OPS[daysOp]||daysOp;
+      alerts.push({level:daysLv,title:`開立天數警訊：${rxDays} 天`,desc:`不符合條件（允許：天數 ${sym} ${daysTh} 天）`});
+    }
+  }
+
+  // Feature 4: combination rules
+  const SYM={lte:'≤',lt:'<',gte:'≥',gt:'>'};
+  document.querySelectorAll('[data-comborule]').forEach(rule=>{
+    const logic=rule.querySelector('[data-field="logic"]')?.value||'OR';
+    const lv=rule.querySelector('[data-field="level"]')?.value||'hard';
+    const results=[];
+    rule.querySelectorAll('[data-combo-cond]').forEach(condRow=>{
+      const type=condRow.querySelector('[data-field="type"]')?.value||'cumDose';
+      let violated=false,desc='';
+      if(type==='cumDose'){
+        const cumN=parseFloat(condRow.querySelector('[data-field="cumN"]')?.value)||0;
+        const cumOp=condRow.querySelector('[data-field="cumOp"]')?.value||'gte';
+        const cumTh=parseFloat(condRow.querySelector('[data-field="cumTh"]')?.value);
+        const cumUnit=condRow.querySelector('[data-field="cumUnit"]')?.value||'';
+        if(cumN&&!isNaN(cumTh)&&freqMult!==null){
+          const cu=getContentUnit();
+          const cumDose=rxSingle*freqMult*cumN;
+          const thCU=cumUnit?convertUnit(cumTh,cumUnit,cu):null;
+          const thCmp=thCU!==null?thCU:cumTh;
+          violated=!evalCond(cumDose,cumOp,thCmp);
+          desc=`每${cumN}天累積劑量 ${SYM[cumOp]||cumOp} ${cumTh} ${cumUnit||cu}`;
+        }
+      } else if(type==='prescDays'){
+        const pdOp=condRow.querySelector('[data-field="pdOp"]')?.value||'lte';
+        const pdTh=parseFloat(condRow.querySelector('[data-field="pdTh"]')?.value);
+        if(!isNaN(pdTh)){
+          violated=!evalCond(rxDays,pdOp,pdTh);
+          desc=`開立天數 ${SYM[pdOp]||pdOp} ${pdTh} 天`;
+        }
+      }
+      if(desc)results.push({violated,desc});
+    });
+    const valid=results.filter(r=>r.desc);
+    if(!valid.length)return;
+    const violated=valid.filter(r=>r.violated);
+    const trigger=logic==='OR'?violated.length>0:violated.length===valid.length;
+    if(trigger){
+      alerts.push({level:lv,title:`組合警訊（${logic}）`,desc:`違反條件：${violated.map(r=>r.desc).join('；')}`});
+    }
+  });
+
   showPopup(alerts);
 }
 
@@ -1290,7 +1530,21 @@ function collectData(){
       bags:{pp:document.getElementById('bag-pp').querySelector('input').checked,pe:document.getElementById('bag-pe').querySelector('input').checked,pvc:document.getElementById('bag-pvc').querySelector('input').checked,glass:document.getElementById('bag-glass').querySelector('input').checked},
       diluentLevel:document.getElementById('lv-dil').value
     },
-    block3:{doseConds,renalGroups,hepatic,freqTags,freqLevel:document.getElementById('lv-freq').value}
+    block3:{doseConds,renalGroups,hepatic,freqTags,freqLevel:document.getElementById('lv-freq').value,
+      cumConds:[...document.querySelectorAll('[data-cumcond]')].map(card=>{
+        const g=f=>card.querySelector(`[data-field="${f}"]`);
+        return {cumN:g('cumN')?.value||'',op:g('op')?.value||'lte',threshold:g('threshold')?.value||'',unit:g('unit')?.value||'',level:g('level')?.value||'soft'};
+      }),
+      prescDays:{op:document.getElementById('days-op')?.value||'lte',threshold:document.getElementById('days-th')?.value||'',level:document.getElementById('lv-days')?.value||'soft'},
+      comboRules:[...document.querySelectorAll('[data-comborule]')].map(rule=>({
+        logic:rule.querySelector('[data-field="logic"]')?.value||'OR',
+        level:rule.querySelector('[data-field="level"]')?.value||'hard',
+        conds:[...rule.querySelectorAll('[data-combo-cond]')].map(row=>{
+          const gf=f=>row.querySelector(`[data-field="${f}"]`);
+          return {type:gf('type')?.value||'cumDose',cumN:gf('cumN')?.value||'',cumOp:gf('cumOp')?.value||'gte',cumTh:gf('cumTh')?.value||'',cumUnit:gf('cumUnit')?.value||'',pdOp:gf('pdOp')?.value||'lte',pdTh:gf('pdTh')?.value||''};
+        })
+      }))
+    }
   };
 }
 
@@ -1356,6 +1610,19 @@ function restoreData(data){
     document.getElementById('freq-tags').appendChild(d);
   });
   setAlsVal('lv-freq',b3.freqLevel);
+  // cumulative dose conds
+  document.getElementById('cum-conds').innerHTML='';cumCondIdx=0;
+  if(b3.cumConds)b3.cumConds.forEach(c=>addCumCond(c));
+  // prescDays
+  if(b3.prescDays){
+    const pd=b3.prescDays;
+    if(pd.threshold)document.getElementById('days-th').value=pd.threshold;
+    if(pd.op)document.getElementById('days-op').value=pd.op;
+    if(pd.level)setAlsVal('lv-days',pd.level);
+  }
+  // combo rules
+  document.getElementById('combo-rules').innerHTML='';comboRuleIdx=0;
+  if(b3.comboRules)b3.comboRules.forEach(r=>addComboRule(r));
 }
 
 function setChk(id,val){const el=document.getElementById(id);if(!el)return;const cb=el.querySelector('input');if(cb){cb.checked=!!val;el.classList.toggle('on',!!val);}}
