@@ -869,7 +869,7 @@ function makeComboCondHTML(saved){
       <option value="cumDose"${isCum?' selected':''}>每N天累積劑量</option>
       <option value="prescDays"${!isCum?' selected':''}>開立天數</option>
     </select>
-    <span data-combo-cum ${!isCum?'style="display:none"':''}style="display:contents">
+    <span data-combo-cum style="display:${isCum?'inline-flex':'none'};align-items:center;gap:5px;flex-wrap:wrap;">
       每 <input type="number" data-field="cumN" value="${s.cumN||7}" style="width:44px"> 天
       <select class="cs" data-field="cumOp">
         <option value="gte"${(!s.cumOp||s.cumOp==='gte')?' selected':''}>≥</option>
@@ -880,7 +880,7 @@ function makeComboCondHTML(saved){
       <input type="number" data-field="cumTh" value="${s.cumTh||''}" placeholder="劑量" style="width:65px">
       <input data-field="cumUnit" value="${s.cumUnit||''}" placeholder="mg" style="width:52px">
     </span>
-    <span data-combo-pd ${isCum?'style="display:none"':''}style="display:contents">
+    <span data-combo-pd style="display:${isCum?'none':'inline-flex'};align-items:center;gap:5px;flex-wrap:wrap;">
       開立天數
       <select class="cs" data-field="pdOp">
         <option value="lte"${(!s.pdOp||s.pdOp==='lte')?' selected':''}>≤</option>
@@ -896,8 +896,8 @@ function makeComboCondHTML(saved){
 function swapComboType(sel){
   const row=sel.closest('[data-combo-cond]');
   const isCum=sel.value==='cumDose';
-  row.querySelector('[data-combo-cum]').style.display=isCum?'contents':'none';
-  row.querySelector('[data-combo-pd]').style.display=isCum?'none':'contents';
+  row.querySelector('[data-combo-cum]').style.display=isCum?'inline-flex':'none';
+  row.querySelector('[data-combo-pd]').style.display=isCum?'none':'inline-flex';
 }
 function addComboCond(condsEl,saved){
   condsEl.insertAdjacentHTML('beforeend',makeComboCondHTML(saved));
